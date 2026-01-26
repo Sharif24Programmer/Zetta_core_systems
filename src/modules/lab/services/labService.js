@@ -6,6 +6,14 @@
 const LAB_REPORTS_KEY = 'zetta_lab_reports';
 const LAB_TESTS_KEY = 'zetta_lab_tests'; // Catalog of available tests
 
+export const LAB_STATUS = {
+    REGISTERED: 'registered',
+    COLLECTED: 'collected',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    DELIVERED: 'delivered'
+};
+
 // --- Initial Data ---
 const DEFAULT_TESTS = [
     {
@@ -106,6 +114,30 @@ export const getAllLabReports = async (tenantId) => {
     return reports
         .filter(r => r.tenantId === tenantId)
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+};
+
+/**
+ * Get single report by ID
+ */
+export const getLabReportById = (id) => {
+    const reports = getFromStorage(LAB_REPORTS_KEY);
+    return reports.find(r => r.id === id) || null;
+};
+
+/**
+ * Update a report (status, results, etc)
+ */
+export const updateLabReport = async (id, updates) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const reports = getFromStorage(LAB_REPORTS_KEY);
+    const index = reports.findIndex(r => r.id === id);
+
+    if (index !== -1) {
+        reports[index] = { ...reports[index], ...updates };
+        saveToStorage(LAB_REPORTS_KEY, reports);
+        return reports[index];
+    }
+    return null;
 };
 
 /**
