@@ -1,10 +1,25 @@
 /**
- * Ticket Service (Local Storage Version)
- * Fast, reliable, and secure local ticket management
+ * Ticket Service (Firestore Version - SHARED ACROSS APPS)
+ * This service is used by zetta-core, zetta-admin-panel, and zetta-support-system
+ * Provides real-time ticket management with cross-app synchronization
  */
 
-const TICKETS_KEY = 'zetta_support_tickets';
-const TICKET_EVENT = 'zetta_ticket_update';
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    addDoc,
+    updateDoc,
+    query,
+    where,
+    orderBy,
+    onSnapshot,
+    serverTimestamp
+} from 'firebase/firestore';
+import { db } from '../../../core/firebase/config';
+
+const TICKETS_COLLECTION = 'support_tickets';
 
 // Ticket Types Enum
 export const TICKET_TYPES = {
@@ -33,158 +48,214 @@ export const PRIORITY = {
     HIGH: 'high'
 };
 
-// --- Helpers ---
-const getAllTicketsFromStorage = () => {
-    try {
-        const data = localStorage.getItem(TICKETS_KEY);
-        return data ? JSON.parse(data) : [];
-    } catch { return []; }
-};
-
-const saveTickets = (tickets) => {
-    localStorage.setItem(TICKETS_KEY, JSON.stringify(tickets));
-    window.dispatchEvent(new Event(TICKET_EVENT));
-};
-
-// --- Service Methods ---
-
 /**
  * Create a new support ticket
  */
 export const createTicket = async (ticketData) => {
-    // Simulate network delay for realism
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        const newTicket = {
+            ...ticketData,
+            status: TICKET_STATUS.OPEN,
+            priority: ticketData.priority || PRIORITY.MEDIUM,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            lastMessageAt: serverTimestamp()
+        };
 
-    const tickets = getAllTicketsFromStorage();
-    const newTicket = {
-        id: `ticket_${Date.now()}`,
-        ...ticketData,
-        status: TICKET_STATUS.OPEN,
-        priority: ticketData.priority || PRIORITY.MEDIUM,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        lastMessageAt: new Date().toISOString(),
-        messages: [] // Initialize messages array
-    };
+        const docRef = await addDoc(collection(db, TICKETS_COLLECTION), newTicket);
 
-    tickets.unshift(newTicket);
-    saveTickets(tickets);
-    return newTicket;
+        return {
+            id: docRef.id,
+            ...ticketData,
+            status: TICKET_STATUS.OPEN,
+            priority: ticketData.priority || PRIORITY.MEDIUM,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            lastMessageAt: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Error creating ticket:', error);
+        throw error;
+    }
 };
 
 /**
  * Get tickets by tenant ID (for users)
  */
 export const getTicketsByTenant = async (tenantId) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 300));
+    try {
+        const q = query(
+            collection(db, TICKETS_COLLECTION),
+            where('tenantId', '==', tenantId),
+            orderBy('lastMessageAt', 'desc')
+        );
 
-    const tickets = getAllTicketsFromStorage();
-    return tickets.filter(t => t.tenantId === tenantId);
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+            lastMessageAt: doc.data().lastMessageAt?.toDate?.()?.toISOString() || doc.data().lastMessageAt
+        }));
+    } catch (error) {
+        console.error('Error getting tickets by tenant:', error);
+        throw error;
+    }
 };
 
 /**
  * Get all tickets (admin only)
  */
 export const getAllTickets = async () => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    return getAllTicketsFromStorage();
+    try {
+        const q = query(
+            collection(db, TICKETS_COLLECTION),
+            orderBy('lastMessageAt', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+            lastMessageAt: doc.data().lastMessageAt?.toDate?.()?.toISOString() || doc.data().lastMessageAt
+        }));
+    } catch (error) {
+        console.error('Error getting all tickets:', error);
+        throw error;
+    }
 };
 
 /**
  * Get single ticket by ID
  */
 export const getTicketById = async (ticketId) => {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    const tickets = getAllTicketsFromStorage();
-    return tickets.find(t => t.id === ticketId) || null;
+    try {
+        const docRef = doc(db, TICKETS_COLLECTION, ticketId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return {
+                id: docSnap.id,
+                ...docSnap.data(),
+                createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() || docSnap.data().createdAt,
+                updatedAt: docSnap.data().updatedAt?.toDate?.()?.toISOString() || docSnap.data().updatedAt,
+                lastMessageAt: docSnap.data().lastMessageAt?.toDate?.()?.toISOString() || docSnap.data().lastMessageAt
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting ticket:', error);
+        throw error;
+    }
 };
 
 /**
- * Listen to tickets (Simulated for local storage)
- * In a real app this would use WebSocket/Firestore listener
+ * Listen to tickets by tenant (Real-time)
  */
 export const listenToTicketsByTenant = (tenantId, callback) => {
-    const fetchAndReturn = () => {
-        const tickets = getAllTicketsFromStorage().filter(t => t.tenantId === tenantId);
+    const q = query(
+        collection(db, TICKETS_COLLECTION),
+        where('tenantId', '==', tenantId),
+        orderBy('lastMessageAt', 'desc')
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const tickets = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+            lastMessageAt: doc.data().lastMessageAt?.toDate?.()?.toISOString() || doc.data().lastMessageAt
+        }));
         callback(tickets);
-    };
-
-    fetchAndReturn();
-
-    const handleUpdate = () => fetchAndReturn();
-    window.addEventListener(TICKET_EVENT, handleUpdate);
-
-    return () => {
-        window.removeEventListener(TICKET_EVENT, handleUpdate);
-    };
+    }, (error) => {
+        console.error('Error listening to tickets:', error);
+        callback([]);
+    });
 };
 
 /**
- * Listen to all tickets (admin)
+ * Listen to all tickets (admin - Real-time)
  */
 export const listenToAllTickets = (callback) => {
-    const fetchAndReturn = () => {
-        const tickets = getAllTicketsFromStorage();
+    const q = query(
+        collection(db, TICKETS_COLLECTION),
+        orderBy('lastMessageAt', 'desc')
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const tickets = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate?.()?.toISOString() || doc.data().updatedAt,
+            lastMessageAt: doc.data().lastMessageAt?.toDate?.()?.toISOString() || doc.data().lastMessageAt
+        }));
         callback(tickets);
-    };
-
-    fetchAndReturn();
-
-    const handleUpdate = () => fetchAndReturn();
-    window.addEventListener(TICKET_EVENT, handleUpdate);
-
-    return () => {
-        window.removeEventListener(TICKET_EVENT, handleUpdate);
-    };
+    }, (error) => {
+        console.error('Error listening to all tickets:', error);
+        callback([]);
+    });
 };
 
 /**
  * Update ticket status
  */
 export const updateTicketStatus = async (ticketId, status) => {
-    const tickets = getAllTicketsFromStorage();
-    const index = tickets.findIndex(t => t.id === ticketId);
+    try {
+        const docRef = doc(db, TICKETS_COLLECTION, ticketId);
 
-    if (index !== -1) {
-        tickets[index].status = status;
-        tickets[index].updatedAt = new Date().toISOString();
-        saveTickets(tickets);
-        return tickets[index];
+        await updateDoc(docRef, {
+            status,
+            updatedAt: serverTimestamp()
+        });
+
+        return await getTicketById(ticketId);
+    } catch (error) {
+        console.error('Error updating ticket status:', error);
+        throw error;
     }
-    return null;
 };
 
 /**
- * Update request status (admin only)
+ * Update ticket priority (admin only)
  */
 export const updateTicketPriority = async (ticketId, priority) => {
-    const tickets = getAllTicketsFromStorage();
-    const index = tickets.findIndex(t => t.id === ticketId);
+    try {
+        const docRef = doc(db, TICKETS_COLLECTION, ticketId);
 
-    if (index !== -1) {
-        tickets[index].priority = priority;
-        tickets[index].updatedAt = new Date().toISOString();
-        saveTickets(tickets);
-        return tickets[index];
+        await updateDoc(docRef, {
+            priority,
+            updatedAt: serverTimestamp()
+        });
+
+        return await getTicketById(ticketId);
+    } catch (error) {
+        console.error('Error updating ticket priority:', error);
+        throw error;
     }
-    return null;
 };
 
 /**
  * Update last message timestamp
  */
 export const updateLastMessageAt = async (ticketId) => {
-    const tickets = getAllTicketsFromStorage();
-    const index = tickets.findIndex(t => t.id === ticketId);
+    try {
+        const docRef = doc(db, TICKETS_COLLECTION, ticketId);
 
-    if (index !== -1) {
-        tickets[index].lastMessageAt = new Date().toISOString();
-        tickets[index].updatedAt = new Date().toISOString();
-        saveTickets(tickets);
-        return tickets[index];
+        await updateDoc(docRef, {
+            lastMessageAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        return await getTicketById(ticketId);
+    } catch (error) {
+        console.error('Error updating last message time:', error);
+        throw error;
     }
-    return null;
 };
 
 /**

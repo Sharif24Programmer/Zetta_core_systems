@@ -1,226 +1,189 @@
 /**
- * Patient Service
+ * Patient Service (Firestore Version)
  * Manage patient records with medical history
  */
 
-const PATIENTS_KEY = 'zetta_patients';
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    addDoc,
+    updateDoc,
+    query,
+    where,
+    orderBy,
+    serverTimestamp,
+    Timestamp
+} from 'firebase/firestore';
+import { db } from '../../../core/firebase/config';
+
+const PATIENTS_COLLECTION = 'patients';
 
 /**
  * Get all patients for a tenant
  */
-export const getAllPatients = (tenantId) => {
+export const getAllPatients = async (tenantId) => {
     try {
-        const data = localStorage.getItem(PATIENTS_KEY);
-        let patients = data ? JSON.parse(data) : [];
+        const q = query(
+            collection(db, PATIENTS_COLLECTION),
+            where('tenantId', '==', tenantId),
+            orderBy('createdAt', 'desc')
+        );
 
-        // Filter by tenant
-        patients = patients.filter(p => p.tenantId === tenantId);
-
-        // Init demo patients if empty for clinic
-        if (patients.length === 0 && (tenantId === 'demo_clinic' || tenantId === 'demo_pharmacy')) {
-            patients = initDemoPatients(tenantId);
-        }
+        const snapshot = await getDocs(q);
+        const patients = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            // Convert Firestore timestamps to ISO strings
+            registrationDate: doc.data().registrationDate?.toDate?.()?.toISOString() || doc.data().registrationDate,
+            lastVisit: doc.data().lastVisit?.toDate?.()?.toISOString() || doc.data().lastVisit,
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
 
         return patients;
-    } catch (e) {
-        console.error('Error getting patients:', e);
-        return [];
+    } catch (error) {
+        console.error('Error getting patients:', error);
+        throw error;
     }
 };
 
 /**
  * Get patient by ID
  */
-export const getPatientById = (patientId) => {
-    const allPatients = getAllPatientsFromStorage();
-    return allPatients.find(p => p.id === patientId);
+export const getPatientById = async (patientId) => {
+    try {
+        const docRef = doc(db, PATIENTS_COLLECTION, patientId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return {
+                id: docSnap.id,
+                ...docSnap.data(),
+                registrationDate: docSnap.data().registrationDate?.toDate?.()?.toISOString() || docSnap.data().registrationDate,
+                lastVisit: docSnap.data().lastVisit?.toDate?.()?.toISOString() || docSnap.data().lastVisit,
+                createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() || docSnap.data().createdAt
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting patient:', error);
+        throw error;
+    }
 };
 
 /**
  * Add new patient
  */
-export const addPatient = (patientData) => {
-    const allPatients = getAllPatientsFromStorage();
-    const newPatient = {
-        id: `PAT${Date.now()}`,
-        ...patientData,
-        registrationDate: new Date().toISOString(),
-        totalVisits: 0,
-        createdAt: new Date().toISOString()
-    };
+export const addPatient = async (patientData) => {
+    try {
+        const newPatient = {
+            ...patientData,
+            registrationDate: serverTimestamp(),
+            totalVisits: 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
 
-    allPatients.push(newPatient);
-    savePatients(allPatients);
-    return newPatient;
+        const docRef = await addDoc(collection(db, PATIENTS_COLLECTION), newPatient);
+
+        // Return with generated ID
+        return {
+            id: docRef.id,
+            ...patientData,
+            registrationDate: new Date().toISOString(),
+            totalVisits: 0,
+            createdAt: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Error adding patient:', error);
+        throw error;
+    }
 };
 
 /**
  * Update patient
  */
-export const updatePatient = (patientId, updates) => {
-    const allPatients = getAllPatientsFromStorage();
-    const index = allPatients.findIndex(p => p.id === patientId);
+export const updatePatient = async (patientId, updates) => {
+    try {
+        const docRef = doc(db, PATIENTS_COLLECTION, patientId);
 
-    if (index !== -1) {
-        allPatients[index] = { ...allPatients[index], ...updates, updatedAt: new Date().toISOString() };
-        savePatients(allPatients);
-        return allPatients[index];
+        await updateDoc(docRef, {
+            ...updates,
+            updatedAt: serverTimestamp()
+        });
+
+        // Fetch and return updated patient
+        const updatedPatient = await getPatientById(patientId);
+        return updatedPatient;
+    } catch (error) {
+        console.error('Error updating patient:', error);
+        throw error;
     }
-    return null;
 };
 
 /**
  * Search patients
  */
-export const searchPatients = (tenantId, query) => {
-    const patients = getAllPatients(tenantId);
-    const lowerQuery = query.toLowerCase();
+export const searchPatients = async (tenantId, query) => {
+    try {
+        // Get all patients for the tenant
+        const patients = await getAllPatients(tenantId);
 
-    return patients.filter(p =>
-        p.name.toLowerCase().includes(lowerQuery) ||
-        p.phone.includes(query) ||
-        p.id.toLowerCase().includes(lowerQuery)
-    );
+        // Client-side search (Firestore doesn't support full-text search natively)
+        const lowerQuery = query.toLowerCase();
+
+        return patients.filter(p =>
+            p.name?.toLowerCase().includes(lowerQuery) ||
+            p.phone?.includes(query) ||
+            p.id?.toLowerCase().includes(lowerQuery) ||
+            p.email?.toLowerCase().includes(lowerQuery)
+        );
+    } catch (error) {
+        console.error('Error searching patients:', error);
+        throw error;
+    }
 };
 
 /**
  * Record patient visit
  */
-export const recordVisit = (patientId, visitData) => {
-    const patient = getPatientById(patientId);
-    if (!patient) return null;
-
-    const updatedPatient = {
-        ...patient,
-        lastVisit: new Date().toISOString(),
-        totalVisits: (patient.totalVisits || 0) + 1
-    };
-
-    return updatePatient(patientId, updatedPatient);
-};
-
-// --- Helpers ---
-
-const getAllPatientsFromStorage = () => {
+export const recordVisit = async (patientId, visitData) => {
     try {
-        return JSON.parse(localStorage.getItem(PATIENTS_KEY) || '[]');
-    } catch { return []; }
+        const patient = await getPatientById(patientId);
+        if (!patient) return null;
+
+        const docRef = doc(db, PATIENTS_COLLECTION, patientId);
+
+        await updateDoc(docRef, {
+            lastVisit: serverTimestamp(),
+            totalVisits: (patient.totalVisits || 0) + 1,
+            updatedAt: serverTimestamp()
+        });
+
+        return await getPatientById(patientId);
+    } catch (error) {
+        console.error('Error recording visit:', error);
+        throw error;
+    }
 };
 
-const savePatients = (patients) => {
-    localStorage.setItem(PATIENTS_KEY, JSON.stringify(patients));
-};
+/**
+ * Delete patient (soft delete by marking as inactive)
+ */
+export const deletePatient = async (patientId) => {
+    try {
+        const docRef = doc(db, PATIENTS_COLLECTION, patientId);
 
-// --- Demo Data ---
+        await updateDoc(docRef, {
+            isActive: false,
+            deletedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
 
-const initDemoPatients = (tenantId) => {
-    const demoPatients = [
-        {
-            id: 'PAT001',
-            tenantId,
-            name: 'Ramesh Kumar',
-            age: 45,
-            gender: 'male',
-            phone: '9876543210',
-            email: 'ramesh.k@email.com',
-            address: 'MG Road, Bangalore',
-            bloodGroup: 'A+',
-            height: 172,
-            weight: 75,
-            allergies: ['Penicillin'],
-            chronicConditions: ['Diabetes Type 2', 'Hypertension'],
-            emergencyContact: {
-                name: 'Sunita Kumar',
-                phone: '9876543211',
-                relation: 'Wife'
-            },
-            insuranceProvider: 'Star Health',
-            policyNumber: 'STR123456',
-            registrationDate: '2025-06-15T10:00:00.000Z',
-            lastVisit: '2026-01-26T09:00:00.000Z',
-            totalVisits: 12
-        },
-        {
-            id: 'PAT002',
-            tenantId,
-            name: 'Priya Sharma',
-            age: 32,
-            gender: 'female',
-            phone: '9876543211',
-            email: 'priya.sharma@email.com',
-            address: 'Koramangala, Bangalore',
-            bloodGroup: 'B+',
-            height: 165,
-            weight: 58,
-            allergies: [],
-            chronicConditions: [],
-            emergencyContact: {
-                name: 'Rajesh Sharma',
-                phone: '9876543212',
-                relation: 'Husband'
-            },
-            registrationDate: '2025-08-20T10:00:00.000Z',
-            lastVisit: '2026-01-25T14:30:00.000Z',
-            totalVisits: 5
-        },
-        {
-            id: 'PAT003',
-            tenantId,
-            name: 'Amit Patel',
-            age: 28,
-            gender: 'male',
-            phone: '9876543212',
-            address: 'Whitefield, Bangalore',
-            bloodGroup: 'O+',
-            height: 178,
-            weight: 82,
-            allergies: ['Peanuts'],
-            chronicConditions: [],
-            registrationDate: '2025-11-10T10:00:00.000Z',
-            lastVisit: '2026-01-24T11:00:00.000Z',
-            totalVisits: 3
-        },
-        {
-            id: 'PAT004',
-            tenantId,
-            name: 'Sunita Devi',
-            age: 55,
-            gender: 'female',
-            phone: '9876543213',
-            address: 'Jayanagar, Bangalore',
-            bloodGroup: 'AB+',
-            height: 160,
-            weight: 68,
-            allergies: [],
-            chronicConditions: ['Thyroid (Hypothyroidism)'],
-            emergencyContact: {
-                name: 'Mohan Devi',
-                phone: '9876543214',
-                relation: 'Son'
-            },
-            registrationDate: '2025-05-05T10:00:00.000Z',
-            lastVisit: '2026-01-23T16:00:00.000Z',
-            totalVisits: 18
-        },
-        {
-            id: 'PAT005',
-            tenantId,
-            name: 'Rajesh Singh',
-            age: 38,
-            gender: 'male',
-            phone: '9876543214',
-            address: 'Indiranagar, Bangalore',
-            bloodGroup: 'O-',
-            height: 175,
-            weight: 70,
-            allergies: ['Sulfa drugs'],
-            chronicConditions: [],
-            registrationDate: '2025-09-12T10:00:00.000Z',
-            lastVisit: '2026-01-22T10:30:00.000Z',
-            totalVisits: 7
-        }
-    ];
-
-    savePatients(demoPatients);
-    return demoPatients;
+        return true;
+    } catch (error) {
+        console.error('Error deleting patient:', error);
+        throw error;
+    }
 };

@@ -1,10 +1,23 @@
 /**
- * Lab Service (Local Storage Version)
+ * Lab Service (Firestore Version)
  * Manage Lab Tests, Results, and Patient Reports
  */
 
-const LAB_REPORTS_KEY = 'zetta_lab_reports';
-const LAB_TESTS_KEY = 'zetta_lab_tests'; // Catalog of available tests
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    addDoc,
+    updateDoc,
+    query,
+    where,
+    orderBy,
+    serverTimestamp
+} from 'firebase/firestore';
+import { db } from '../../../core/firebase/config';
+
+const LAB_REPORTS_COLLECTION = 'lab_reports';
 
 export const LAB_STATUS = {
     REGISTERED: 'registered',
@@ -14,7 +27,7 @@ export const LAB_STATUS = {
     DELIVERED: 'delivered'
 };
 
-// --- Initial Data ---
+// Default test catalog (can be stored in Firestore later)
 const DEFAULT_TESTS = [
     {
         id: 'test_blood_cbc',
@@ -51,93 +64,126 @@ const DEFAULT_TESTS = [
     }
 ];
 
-// --- Helpers ---
-const getFromStorage = (key) => {
-    try {
-        const data = localStorage.getItem(key);
-        return data ? JSON.parse(data) : [];
-    } catch { return []; }
-};
-
-const saveToStorage = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-};
-
-// --- Service Methods ---
-
 /**
  * Get available tests catalog
  */
 export const getLabTests = async (tenantId) => {
-    // Return default + custom tests
-    const customTests = getFromStorage(LAB_TESTS_KEY).filter(t => t.tenantId === tenantId);
-    return [...DEFAULT_TESTS, ...customTests];
+    // For now, return default tests
+    // Future: fetch from Firestore collection 'lab_test_templates'
+    return DEFAULT_TESTS;
 };
 
 /**
  * Create a new Patient Lab Report
  */
 export const createLabReport = async (reportData) => {
-    // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+        const newReport = {
+            ...reportData,
+            status: reportData.status || LAB_STATUS.REGISTERED,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
 
-    const reports = getFromStorage(LAB_REPORTS_KEY);
-    const newReport = {
-        id: `report_${Date.now()}`,
-        ...reportData,
-        status: 'completed', // or 'pending'
-        createdAt: new Date().toISOString()
-    };
+        const docRef = await addDoc(collection(db, LAB_REPORTS_COLLECTION), newReport);
 
-    reports.push(newReport);
-    saveToStorage(LAB_REPORTS_KEY, reports);
-    return newReport;
+        return {
+            id: docRef.id,
+            ...reportData,
+            createdAt: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('Error creating lab report:', error);
+        throw error;
+    }
 };
 
 /**
  * Get reports for a specific patient
  */
 export const getPatientReports = async (patientId) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const reports = getFromStorage(LAB_REPORTS_KEY);
-    return reports
-        .filter(r => r.patientId === patientId)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    try {
+        const q = query(
+            collection(db, LAB_REPORTS_COLLECTION),
+            where('patientId', '==', patientId),
+            orderBy('createdAt', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
+    } catch (error) {
+        console.error('Error getting patient reports:', error);
+        throw error;
+    }
 };
 
 /**
  * Get all reports for a tenant (Dashboard)
  */
 export const getAllLabReports = async (tenantId) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const reports = getFromStorage(LAB_REPORTS_KEY);
-    return reports
-        .filter(r => r.tenantId === tenantId)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    try {
+        const q = query(
+            collection(db, LAB_REPORTS_COLLECTION),
+            where('tenantId', '==', tenantId),
+            orderBy('createdAt', 'desc')
+        );
+
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
+    } catch (error) {
+        console.error('Error getting lab reports:', error);
+        throw error;
+    }
 };
 
 /**
  * Get single report by ID
  */
-export const getLabReportById = (id) => {
-    const reports = getFromStorage(LAB_REPORTS_KEY);
-    return reports.find(r => r.id === id) || null;
+export const getLabReportById = async (id) => {
+    try {
+        const docRef = doc(db, LAB_REPORTS_COLLECTION, id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return {
+                id: docSnap.id,
+                ...docSnap.data(),
+                createdAt: docSnap.data().createdAt?.toDate?.()?.toISOString() || docSnap.data().createdAt
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error('Error getting lab report:', error);
+        throw error;
+    }
 };
 
 /**
  * Update a report (status, results, etc)
  */
 export const updateLabReport = async (id, updates) => {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    const reports = getFromStorage(LAB_REPORTS_KEY);
-    const index = reports.findIndex(r => r.id === id);
+    try {
+        const docRef = doc(db, LAB_REPORTS_COLLECTION, id);
 
-    if (index !== -1) {
-        reports[index] = { ...reports[index], ...updates };
-        saveToStorage(LAB_REPORTS_KEY, reports);
-        return reports[index];
+        await updateDoc(docRef, {
+            ...updates,
+            updatedAt: serverTimestamp()
+        });
+
+        // Return updated report
+        return await getLabReportById(id);
+    } catch (error) {
+        console.error('Error updating lab report:', error);
+        throw error;
     }
-    return null;
 };
 
 /**
@@ -151,7 +197,7 @@ export const generateReportHTML = (report, patient, tenantName) => {
             <style>
                 body { font-family: 'Helvetica', sans-serif; padding: 40px; }
                 .header { text-align: center; margin-bottom: 40px; border-bottom: 2px solid #ccc; padding-bottom: 20px; }
-                .patient-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9fafb; pading: 20px; border-radius: 8px; }
+                .patient-info { display: flex; justify-content: space-between; margin-bottom: 30px; background: #f9fafb; padding: 20px; border-radius: 8px; }
                 .test-section { margin-bottom: 30px; }
                 .test-name { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
                 table { width: 100%; border-collapse: collapse; }
