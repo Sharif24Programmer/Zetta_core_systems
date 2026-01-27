@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from '../../services/firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut as firebaseSignOut, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../firebase/config';
+import {
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signOut as firebaseSignOut,
+    createUserWithEmailAndPassword,
+    GoogleAuthProvider,
+    signInWithPopup
+} from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getTenant } from '../tenant/tenantService';
-import { getSubscription } from '../subscription/subscriptionService';
-import { getPlan, DEFAULT_PLANS } from '../subscription/planService';
-import { ROLES } from '../roles/roleService';
 
 const AuthContext = createContext(null);
 
@@ -21,107 +24,71 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [userData, setUserData] = useState(null);
     const [tenant, setTenant] = useState(null);
-    const [subscription, setSubscription] = useState(null);
-    const [plan, setPlan] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Load full user context
+    // Load full user context from Firestore
     const loadUserContext = async (firebaseUser) => {
         try {
-            // 1. Get user document
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+            // 1. Get user document from Firestore
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
 
-            let userInfo;
-            if (userDoc.exists()) {
-                userInfo = userDoc.data();
-            } else {
-                // Default for new users
-                userInfo = {
-                    tenantId: 'default',
-                    role: ROLES.OWNER,
-                    name: firebaseUser.displayName || 'User',
-                    email: firebaseUser.email
-                };
+            if (!userDoc.exists()) {
+                throw new Error('Account not found. Please contact support or complete signup.');
             }
+
+            const userInfo = userDoc.data();
+
+            // 2. Check if user has a tenantId
+            if (!userInfo.tenantId) {
+                throw new Error('Your account is not associated with any shop. Please contact support.');
+            }
+
             setUserData(userInfo);
 
-            // 2. Get tenant
-            const tenantData = await getTenant(userInfo.tenantId);
-            setTenant(tenantData);
+            // 3. Get tenant data
+            const tenantDocRef = doc(db, 'tenants', userInfo.tenantId);
+            const tenantDoc = await getDoc(tenantDocRef);
 
-            // 3. Get subscription
-            const subscriptionData = await getSubscription(userInfo.tenantId);
-            setSubscription(subscriptionData);
-
-            // 4. Get plan
-            if (subscriptionData?.planId) {
-                const planData = await getPlan(subscriptionData.planId) || DEFAULT_PLANS[subscriptionData.planId];
-                setPlan(planData);
-            } else {
-                setPlan(DEFAULT_PLANS.free);
+            if (!tenantDoc.exists()) {
+                throw new Error('Shop not found. Please contact support.');
             }
+
+            const tenantData = {
+                id: tenantDoc.id,
+                ...tenantDoc.data()
+            };
+
+            setTenant(tenantData);
+            setError(null);
 
         } catch (err) {
             console.error('Error loading user context:', err);
             setError(err.message);
-            // Set defaults on error
-            setUserData({ tenantId: 'default', role: ROLES.STAFF, name: 'User' });
-            setPlan(DEFAULT_PLANS.free);
+            // Sign out if context loading fails
+            await firebaseSignOut(auth);
+            throw err;
         }
     };
 
-    // Demo mode login
-    const loadDemoUser = () => {
-        const isDemo = localStorage.getItem('zetta_is_demo') === 'true';
-        if (isDemo) {
-            const demoUser = JSON.parse(localStorage.getItem('zetta_user') || '{}');
-            const demoTenant = JSON.parse(localStorage.getItem('zetta_current_tenant') || '{}');
-
-            setUser({ uid: demoUser.uid, email: demoUser.email });
-            setUserData({
-                tenantId: demoUser.tenantId || demoTenant.id,
-                role: demoUser.role,
-                name: demoUser.displayName,
-                demo: true
-            });
-            setTenant(demoTenant);
-
-            // Assume Pro/Enterprise subscription for Demo
-            setSubscription({
-                tenantId: demoTenant.id,
-                planId: demoTenant.planId || 'enterprise',
-                status: 'active',
-                endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-            });
-
-            // Load plan features
-            const planDetails = DEFAULT_PLANS[demoTenant.planId || 'enterprise'];
-            setPlan(planDetails);
-
-            return true;
-        }
-        return false;
-    };
-
+    // Listen to auth state changes
     useEffect(() => {
-        // Check demo mode first
-        if (loadDemoUser()) {
-            setLoading(false);
-            return;
-        }
-
-        // Firebase auth listener
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
-                setUser(firebaseUser);
-                await loadUserContext(firebaseUser);
+                try {
+                    setUser(firebaseUser);
+                    await loadUserContext(firebaseUser);
+                } catch (err) {
+                    // Error already handled in loadUserContext
+                    setUser(null);
+                    setUserData(null);
+                    setTenant(null);
+                }
             } else {
                 setUser(null);
                 setUserData(null);
                 setTenant(null);
-                setSubscription(null);
-                setPlan(null);
             }
             setLoading(false);
         });
@@ -134,6 +101,21 @@ export const AuthProvider = ({ children }) => {
         try {
             setError(null);
             const result = await signInWithEmailAndPassword(auth, email, password);
+            // loadUserContext will be called by onAuthStateChanged
+            return { success: true, user: result.user };
+        } catch (err) {
+            setError(err.message);
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Sign in with Google
+    const signInWithGoogle = async () => {
+        try {
+            setError(null);
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            // loadUserContext will be called by onAuthStateChanged
             return { success: true, user: result.user };
         } catch (err) {
             setError(err.message);
@@ -142,107 +124,92 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Sign up new user
-    const signUp = async (email, password, name, tenantId = null) => {
+    const signUp = async (email, password, displayName, tenantData = null) => {
         try {
             setError(null);
-            const result = await createUserWithEmailAndPassword(auth, email, password);
 
-            // Create user document
-            const newTenantId = tenantId || `tenant_${result.user.uid}`;
-            await setDoc(doc(db, 'users', result.user.uid), {
-                email,
-                name,
-                tenantId: newTenantId,
-                role: ROLES.OWNER,
-                createdAt: serverTimestamp()
+            // 1. Create Firebase auth user
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            const newUser = result.user;
+
+            // 2. Create tenant if provided (for new signups)
+            let tenantId = tenantData?.id || null;
+
+            if (tenantData) {
+                const tenantDocRef = doc(db, 'tenants', tenantData.id || `tenant_${Date.now()}`);
+                await setDoc(tenantDocRef, {
+                    name: tenantData.name,
+                    type: tenantData.type || 'clinic',
+                    email: email,
+                    phone: tenantData.phone || '',
+                    address: tenantData.address || {},
+                    subscription: {
+                        plan: 'free',
+                        status: 'trial',
+                        startDate: serverTimestamp(),
+                        endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 14 day trial
+                    },
+                    modules: {
+                        pos: true,
+                        inventory: true,
+                        patients: true,
+                        lab: false,
+                        pharmacy: false
+                    },
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+                tenantId = tenantDocRef.id;
+            }
+
+            // 3. Create user document in Firestore
+            await setDoc(doc(db, 'users', newUser.uid), {
+                email: email,
+                displayName: displayName,
+                tenantId: tenantId,
+                role: 'admin', // First user is admin
+                apps: {
+                    core: true,
+                    admin: false,
+                    support: true
+                },
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp()
             });
 
-            return { success: true, user: result.user };
+            return { success: true, user: newUser };
         } catch (err) {
             setError(err.message);
             return { success: false, error: err.message };
         }
     };
 
-    // Sign out (Updated to clear demo state)
+    // Sign out
     const signOut = async () => {
         try {
             await firebaseSignOut(auth);
-
-            // Clear all local storage
-            localStorage.clear();
-            // Or use demoService.exitDemoMode() logic if imported
-
             setUser(null);
             setUserData(null);
             setTenant(null);
-            setSubscription(null);
-            setPlan(null);
             return { success: true };
         } catch (err) {
+            setError(err.message);
             return { success: false, error: err.message };
         }
     };
 
-    // Legacy demo login (Redirect to use demoService)
-    const demoLogin = (role, planId) => {
-        console.warn('Use demoService.startDemoMode instead');
-        import('../demo/demoService').then(m => m.startDemoMode(role === 'owner' ? 'shop' : 'clinic'));
-    };
-
-    // Helper methods
-    const isAuthenticated = () => !!user;
-    const isSuperAdmin = () => userData?.role === ROLES.SUPER_ADMIN;
-    const isAdmin = () => userData?.role === ROLES.ADMIN || userData?.role === ROLES.SUPER_ADMIN;
-    const isOwner = () => userData?.role === ROLES.OWNER || isAdmin();
-
-    const hasFeature = (feature) => {
-        return plan?.features?.[feature] === true;
-    };
-
-    const isSubscribed = () => {
-        if (!subscription) return false;
-        if (subscription.status !== 'active' && subscription.status !== 'trial') return false;
-
-        const endDate = subscription.endDate?.toDate?.() || new Date(subscription.endDate);
-        return endDate > new Date();
-    };
-
     const value = {
-        // State
         user,
         userData,
         tenant,
-        subscription,
-        plan,
+        tenantId: tenant?.id || userData?.tenantId,
         loading,
         error,
-
-        // Auth methods
         signIn,
+        signInWithGoogle,
         signUp,
-        signOut,
-        demoLogin,
-
-        // Helpers
-        isAuthenticated,
-        isSuperAdmin,
-        isAdmin,
-        isOwner,
-        hasFeature,
-        isSubscribed,
-
-        // Quick accessors
-        tenantId: userData?.tenantId || 'default',
-        userId: user?.uid || null,
-        userName: userData?.name || 'User',
-        userRole: userData?.role || ROLES.STAFF,
-        planId: plan?.id || 'free'
+        signOut
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
