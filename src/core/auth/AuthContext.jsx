@@ -74,6 +74,39 @@ export const AuthProvider = ({ children }) => {
 
     // Listen to auth state changes
     useEffect(() => {
+        // CHECK DEMO MODE FIRST - Skip Firebase entirely
+        const checkDemoMode = () => {
+            const isDemoActive = localStorage.getItem('zetta_demo_mode') === 'true';
+            if (isDemoActive) {
+                const demoUser = {
+                    uid: 'demo_user_001',
+                    email: 'demo@zettapos.com',
+                    displayName: 'Demo User'
+                };
+                const demoTenant = JSON.parse(localStorage.getItem('zetta_demo_tenant') || '{}');
+                const demoUserData = {
+                    tenantId: 'demo_tenant_001',
+                    role: 'admin',
+                    displayName: 'Demo User',
+                    email: 'demo@zettapos.com',
+                    demo: true
+                };
+
+                setUser(demoUser);
+                setUserData(demoUserData);
+                setTenant(demoTenant);
+                setLoading(false);
+                return true; // Demo mode active
+            }
+            return false; // Not in demo mode
+        };
+
+        // If demo mode is active, skip Firebase listener
+        if (checkDemoMode()) {
+            return; // Exit early, no cleanup needed
+        }
+
+        // PRODUCTION MODE: Setup Firebase listener
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
