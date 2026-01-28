@@ -1,13 +1,15 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { isDemoMode } from '../demo/demoManager';
 import Loader from '../../shared/components/Loader';
 
 /**
- * TenantGuard - Ensures user belongs to a valid tenant
+ * TenantGuard - Ensures user belongs to a valid tenant (Firebase or Demo Mode)
  * Redirects to error page if tenant is invalid or suspended
  */
 const TenantGuard = ({ children }) => {
     const { tenant, loading } = useAuth();
+    const inDemoMode = isDemoMode();
 
     if (loading) {
         return (
@@ -17,7 +19,12 @@ const TenantGuard = ({ children }) => {
         );
     }
 
-    // No tenant found
+    // In demo mode, always allow access (demo tenant is set in AuthContext)
+    if (inDemoMode) {
+        return children;
+    }
+
+    // No tenant found (production mode)
     if (!tenant) {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
