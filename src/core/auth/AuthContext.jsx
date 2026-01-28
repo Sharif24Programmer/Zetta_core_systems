@@ -231,6 +231,35 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Helper: Check if user has a specific feature
+    const hasFeature = (featureName) => {
+        // In demo mode, enable all features
+        if (localStorage.getItem('zetta_demo_mode') === 'true') {
+            return true;
+        }
+
+        // Check tenant's plan features
+        // For now, return true for all features (you can implement proper feature checking later)
+        return true;
+    };
+
+    // Helper: Check if user is super admin
+    const isSuperAdmin = () => {
+        if (localStorage.getItem('zetta_demo_mode') === 'true') {
+            return false; // Demo users are not super admins
+        }
+        return userData?.role === 'super_admin';
+    };
+
+    // Helper: Get user's display name
+    const userName = user?.displayName || userData?.displayName || userData?.name || 'User';
+
+    // Helper: Get plan info (mock for now)
+    const plan = {
+        name: tenant?.planId || 'Free',
+        features: []
+    };
+
     const value = {
         user,
         userData,
@@ -241,7 +270,12 @@ export const AuthProvider = ({ children }) => {
         signIn,
         signInWithGoogle,
         signUp,
-        signOut
+        signOut,
+        // Helper functions
+        hasFeature,
+        isSuperAdmin,
+        userName,
+        plan
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
