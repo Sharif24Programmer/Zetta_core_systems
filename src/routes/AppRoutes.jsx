@@ -4,6 +4,7 @@ import { AuthGuard, TenantGuard, SubscriptionGuard, FeatureGuard } from '../core
 import { SuperAdminOnly } from '../core/guards/RoleGuard';
 import Loader from '../shared/components/Loader';
 import BottomNav from '../shared/components/BottomNav';
+import { isDemoMode } from '../core/demo/demoManager';
 
 // Pages
 import Login from '../pages/Login';
@@ -82,8 +83,7 @@ import BookAppointment from '../modules/appointments/pages/BookAppointment';
 
 const AppRoutes = () => {
     const { loading, user } = useAuth();
-    const demoUser = localStorage.getItem('demoUser');
-    const isAuthenticated = !!user || !!demoUser;
+    const isAuthenticated = !!user || isDemoMode();
 
     if (loading) {
         return (
