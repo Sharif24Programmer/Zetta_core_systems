@@ -1,5 +1,5 @@
 /**
- * Patient Service (Firestore Version)
+ * Patient Service (Dual Mode: Demo + Firebase)
  * Manage patient records with medical history
  */
 
@@ -17,6 +17,7 @@ import {
     Timestamp
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
+import { isDemoMode, getDemoData, saveDemoData, generateDemoId } from '../../../core/demo/demoManager';
 
 const PATIENTS_COLLECTION = 'patients';
 
@@ -24,6 +25,13 @@ const PATIENTS_COLLECTION = 'patients';
  * Get all patients for a tenant
  */
 export const getAllPatients = async (tenantId) => {
+    // DEMO MODE: Use localStorage
+    if (isDemoMode()) {
+        const patients = getDemoData('patients');
+        return patients.filter(p => p.tenantId === tenantId);
+    }
+
+    // PRODUCTION MODE: Use Firebase
     try {
         const q = query(
             collection(db, PATIENTS_COLLECTION),
@@ -52,6 +60,13 @@ export const getAllPatients = async (tenantId) => {
  * Get patient by ID
  */
 export const getPatientById = async (patientId) => {
+    // DEMO MODE
+    if (isDemoMode()) {
+        const patients = getDemoData('patients');
+        return patients.find(p => p.id === patientId) || null;
+    }
+
+    // PRODUCTION MODE
     try {
         const docRef = doc(db, PATIENTS_COLLECTION, patientId);
         const docSnap = await getDoc(docRef);
@@ -76,6 +91,23 @@ export const getPatientById = async (patientId) => {
  * Add new patient
  */
 export const addPatient = async (patientData) => {
+    // DEMO MODE
+    if (isDemoMode()) {
+        const patients = getDemoData('patients');
+        const newPatient = {
+            id: generateDemoId('demo_patient'),
+            ...patientData,
+            registrationDate: new Date().toISOString(),
+            totalVisits: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+        patients.push(newPatient);
+        saveDemoData('patients', patients);
+        return newPatient;
+    }
+
+    // PRODUCTION MODE
     try {
         const newPatient = {
             ...patientData,
@@ -87,13 +119,13 @@ export const addPatient = async (patientData) => {
 
         const docRef = await addDoc(collection(db, PATIENTS_COLLECTION), newPatient);
 
-        // Return with generated ID
         return {
             id: docRef.id,
             ...patientData,
             registrationDate: new Date().toISOString(),
             totalVisits: 0,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
     } catch (error) {
         console.error('Error adding patient:', error);
@@ -105,6 +137,23 @@ export const addPatient = async (patientData) => {
  * Update patient
  */
 export const updatePatient = async (patientId, updates) => {
+    // DEMO MODE
+    if (isDemoMode()) {
+        const patients = getDemoData('patients');
+        const index = patients.findIndex(p => p.id === patientId);
+        if (index !== -1) {
+            patients[index] = {
+                ...patients[index],
+                ...updates,
+                updatedAt: new Date().toISOString()
+            };
+            saveDemoData('patients', patients);
+            return patients[index];
+        }
+        return null;
+    }
+
+    // PRODUCTION MODE
     try {
         const docRef = doc(db, PATIENTS_COLLECTION, patientId);
 
