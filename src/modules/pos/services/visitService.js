@@ -13,6 +13,7 @@ import {
     getDoc,
     limit
 } from 'firebase/firestore';
+import { isDemoMode, getDemoData, saveDemoData, generateDemoId } from '../../../core/demo/demoManager';
 
 /**
  * Visit Schema:
@@ -46,6 +47,21 @@ import {
  * Create new visit
  */
 export const createVisit = async (visitData) => {
+    // DEMO MODE
+    if (isDemoMode()) {
+        const visits = getDemoData('visits');
+        const newVisit = {
+            id: generateDemoId('demo_visit'),
+            ...visitData,
+            createdAt: new Date().toISOString(),
+            status: visitData.status || 'waiting'
+        };
+        visits.push(newVisit);
+        saveDemoData('visits', visits);
+        return newVisit;
+    }
+
+    // PRODUCTION MODE
     const data = {
         ...visitData,
         status: 'waiting',
@@ -60,6 +76,18 @@ export const createVisit = async (visitData) => {
  * Get today's visits
  */
 export const getTodaysVisits = async (tenantId) => {
+    // DEMO MODE
+    if (isDemoMode()) {
+        const visits = getDemoData('visits');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return visits.filter(v => {
+            const visitDate = new Date(v.createdAt);
+            return v.tenantId === tenantId && visitDate >= today;
+        });
+    }
+
+    // PRODUCTION MODE
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -77,6 +105,26 @@ export const getTodaysVisits = async (tenantId) => {
  * Listen to today's visits
  */
 export const listenToTodaysVisits = (tenantId, callback) => {
+    // DEMO MODE - Poll localStorage every 2 seconds
+    if (isDemoMode()) {
+        const pollVisits = () => {
+            const visits = getDemoData('visits');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todaysVisits = visits.filter(v => {
+                const visitDate = new Date(v.createdAt);
+                return v.tenantId === tenantId && visitDate >= today;
+            });
+            callback(todaysVisits);
+        };
+
+        pollVisits(); // Initial call
+        const interval = setInterval(pollVisits, 2000);
+
+        return () => clearInterval(interval); // Cleanup function
+    }
+
+    // PRODUCTION MODE
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

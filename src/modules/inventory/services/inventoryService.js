@@ -1,6 +1,7 @@
 /**
  * Inventory Service
  * Uses shared stockSync for real-time stock data
+ * Supports Demo Mode (localStorage) and Production Mode (Firebase)
  */
 
 import { db } from '../../../services/firebase';
@@ -32,17 +33,7 @@ import {
     setStock
 } from '../../../shared/stockSync';
 
-/**
- * Check if in demo mode
- */
-const isDemoMode = (tenantId) => {
-    if (tenantId === 'demo_shop') return true;
-    try {
-        const demoUser = localStorage.getItem('demoUser');
-        if (demoUser) return JSON.parse(demoUser).tenantId === 'demo_shop';
-    } catch (e) { }
-    return false;
-};
+import { isDemoMode, getDemoData, saveDemoData, generateDemoId } from '../../../core/demo/demoManager';
 
 /**
  * Get all products for a tenant
