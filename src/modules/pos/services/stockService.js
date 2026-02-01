@@ -1,5 +1,6 @@
 import { db } from '../../../services/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
+import { isDemoMode } from '../../../core/demo/demoManager';
 
 /**
  * CRITICAL: Transaction-safe stock reduction
@@ -9,20 +10,6 @@ import { doc, runTransaction } from 'firebase/firestore';
  * 2. All stock updates succeed or all fail (atomic)
  * 3. No overselling possible
  */
-
-/**
- * Check if we're in demo mode
- */
-const isDemoMode = () => {
-    try {
-        const demoUser = localStorage.getItem('demoUser');
-        if (demoUser) {
-            const parsed = JSON.parse(demoUser);
-            return parsed.tenantId === 'demo_shop';
-        }
-    } catch (e) { }
-    return false;
-};
 
 /**
  * Reduce stock for multiple items (after successful bill)
