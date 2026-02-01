@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listenToMessages } from "../services/messageService";
+import { subscribeToMessages } from "../services/ticketService";
 
 /**
  * Hook to listen to messages for a specific ticket
@@ -16,7 +16,7 @@ export const useMessages = (ticketId) => {
         }
 
         setLoading(true);
-        const unsubscribe = listenToMessages(ticketId, (data) => {
+        const unsubscribe = subscribeToMessages(ticketId, (data) => {
             setMessages(data);
             setLoading(false);
         });

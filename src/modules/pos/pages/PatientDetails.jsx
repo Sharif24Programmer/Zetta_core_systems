@@ -172,28 +172,30 @@ const PatientDetails = () => {
                         )}
 
                         <div className="bg-white border rounded-lg overflow-hidden">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 text-slate-500">
-                                    <tr>
-                                        <th className="p-3 text-left">Date</th>
-                                        <th className="p-3 text-left">BP</th>
-                                        <th className="p-3 text-left">Weight</th>
-                                        <th className="p-3 text-left">Temp</th>
-                                        <th className="p-3 text-left">Pulse</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {vitals.map(v => (
-                                        <tr key={v.id} className="border-t hover:bg-slate-50">
-                                            <td className="p-3">{new Date(v.date).toLocaleString()}</td>
-                                            <td className="p-3 font-medium">{v.bp || '-'}</td>
-                                            <td className="p-3">{v.weight || '-'}</td>
-                                            <td className="p-3">{v.temp || '-'}</td>
-                                            <td className="p-3">{v.pulse || '-'}</td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[600px]">
+                                    <thead className="bg-slate-50 text-slate-500">
+                                        <tr>
+                                            <th className="p-3 text-left">Date</th>
+                                            <th className="p-3 text-left">BP</th>
+                                            <th className="p-3 text-left">Weight</th>
+                                            <th className="p-3 text-left">Temp</th>
+                                            <th className="p-3 text-left">Pulse</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {vitals.map(v => (
+                                            <tr key={v.id} className="border-t hover:bg-slate-50">
+                                                <td className="p-3">{new Date(v.date).toLocaleString()}</td>
+                                                <td className="p-3 font-medium">{v.bp || '-'}</td>
+                                                <td className="p-3">{v.weight || '-'}</td>
+                                                <td className="p-3">{v.temp || '-'}</td>
+                                                <td className="p-3">{v.pulse || '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -1,7 +1,19 @@
 import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge';
 import PriorityBadge from './PriorityBadge';
-import { getTypeLabel } from '../services/ticketService';
+// import { getTypeLabel } from '../services/ticketService'; // Missing export
+import { TICKET_TYPES } from '../services/ticketService';
+
+const getTypeLabel = (type) => {
+    switch (type) {
+        case TICKET_TYPES.LOGIN: return 'Login Issue';
+        case TICKET_TYPES.BILLING: return 'Billing';
+        case TICKET_TYPES.INVENTORY: return 'Inventory';
+        case TICKET_TYPES.BUG: return 'Bug Report';
+        case TICKET_TYPES.FEATURE_REQUEST: return 'Feature Request';
+        default: return type?.replace(/_/g, ' ') || 'General';
+    }
+};
 
 const formatDate = (timestamp) => {
     if (!timestamp) return '';

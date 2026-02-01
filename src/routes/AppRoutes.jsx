@@ -7,9 +7,11 @@ import BottomNav from '../shared/components/BottomNav';
 import { isDemoMode } from '../core/demo/demoManager';
 
 // Pages
+import LandingPage from '../pages/LandingPage';
 import Login from '../pages/Login';
 import Signup from '../pages/Signup';
 import BusinessSetup from '../pages/BusinessSetup';
+import PendingApproval from '../pages/PendingApproval';
 import Home from '../pages/Home';
 
 // Support Module
@@ -55,14 +57,22 @@ import AddInvoice from '../modules/invoices/pages/AddInvoice';
 import InvoiceDetails from '../modules/invoices/pages/InvoiceDetails';
 import SupplierList from '../modules/invoices/pages/SupplierList';
 
-// Admin Module
-import AdminHome from '../admin/pages/AdminHome';
-import TenantList from '../admin/pages/TenantList';
-import TenantDetail from '../admin/pages/TenantDetail';
-import UserList from '../admin/pages/UserList';
-import RevenueDashboard from '../admin/pages/RevenueDashboard';
+
 import FeatureFlags from '../admin/pages/FeatureFlags';
 
+// New Admin Panel Components
+import AdminLayout from '../admin/layout/AdminLayout';
+import Dashboard from '../admin/pages/Dashboard';
+import Tenants from '../admin/pages/Tenants';
+import Modules from '../admin/pages/Modules';
+import MasterData from '../admin/pages/MasterData';
+import Security from '../admin/pages/Security';
+import Communication from '../admin/pages/Communication';
+import Payments from '../admin/pages/Payments';
+import Revenue from '../admin/pages/Revenue';
+import UserManagement from '../admin/pages/UserManagement';
+import AdminSettings from '../admin/pages/AdminSettings';
+import SeedData from '../admin/pages/SeedData';
 
 // Subscription Module
 import UpgradePage from '../modules/subscription/pages/UpgradePage';
@@ -485,87 +495,35 @@ const AppRoutes = () => {
                     }
                 />
 
-                {/* Admin Module Routes */}
+                {/* New Admin Panel Routes */}
                 <Route
-                    path="/app/admin"
+                    path="/admin"
                     element={
                         <AuthGuard>
-                            <SuperAdminOnly>
-                                <AdminHome />
-                            </SuperAdminOnly>
+                            {/* <SuperAdminOnly> */}
+                            <AdminLayout />
+                            {/* </SuperAdminOnly> */}
                         </AuthGuard>
                     }
-                />
-                <Route
-                    path="/app/admin/tenants"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <TenantList />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/tenant/:tenantId"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <TenantDetail />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/users"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <UserList />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/revenue"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <RevenueDashboard />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/flags"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <FeatureFlags />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/support"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <AdminDashboard />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
-                <Route
-                    path="/app/admin/tickets/:id"
-                    element={
-                        <AuthGuard>
-                            <SuperAdminOnly>
-                                <AdminTicketDetail />
-                            </SuperAdminOnly>
-                        </AuthGuard>
-                    }
-                />
+                >
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="tenants" element={<Tenants />} />
+                    <Route path="modules" element={<Modules />} />
+                    <Route path="master-data" element={<MasterData />} />
+                    <Route path="security" element={<Security />} />
+                    <Route path="security" element={<Security />} />
+                    <Route path="communication" element={<Communication />} />
+                    <Route path="tickets" element={<AdminDashboard />} />
+                    <Route path="tickets/:id" element={<AdminTicketDetail />} />
+                    <Route path="payments" element={<Payments />} />
+                    <Route path="revenue" element={<Revenue />} />
+                    <Route path="users" element={<UserManagement />} />
+                    <Route path="settings" element={<AdminSettings />} />
+                    <Route path="features" element={<FeatureFlags />} />
+                    <Route path="seed" element={<SeedData />} />
+                </Route>
+
 
                 {/* Subscription Routes */}
                 <Route
@@ -668,8 +626,12 @@ const AppRoutes = () => {
                 />
 
                 {/* Default Redirects */}
-                <Route path="/" element={<Navigate to="/app" replace />} />
-                <Route path="*" element={<Navigate to="/app" replace />} />
+
+                <Route
+                    path="/"
+                    element={isAuthenticated ? <Navigate to="/app" replace /> : <LandingPage />}
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
 
             {/* Bottom Navigation - show when authenticated */}

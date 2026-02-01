@@ -17,7 +17,11 @@ export const DEMO_TENANT = {
     name: 'Demo Medical Store',
     type: 'pharmacy',
     plan: 'pro',
-    demo: true
+    demo: true,
+    locations: [
+        { id: 'loc1', name: 'Main Clinic', address: '123 MG Road, Bangalore' },
+        { id: 'loc2', name: 'Downtown Branch', address: '456 Park Street, Mumbai' }
+    ]
 };
 
 /**

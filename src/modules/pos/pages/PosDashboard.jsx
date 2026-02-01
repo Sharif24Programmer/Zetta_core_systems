@@ -3,6 +3,7 @@ import { useAuth } from '../../../core/auth/AuthContext';
 import { useTodaysBills, useTodaysStats } from '../hooks/useBills';
 import { formatCurrency, formatBillTime } from '../services/billService';
 import Loader from '../../../shared/components/Loader';
+import Skeleton, { ListSkeleton } from '../../../shared/components/Skeleton';
 
 const PosDashboard = () => {
     const navigate = useNavigate();
@@ -39,9 +40,12 @@ const PosDashboard = () => {
 
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-3 mt-4">
-                    <div className="card text-center">
+                    <div className="card text-center flex flex-col items-center justify-center h-24">
                         {statsLoading ? (
-                            <div className="animate-pulse h-12 bg-slate-100 rounded"></div>
+                            <div className="w-full flex flex-col items-center gap-2">
+                                <Skeleton variant="text" width="60%" height={24} />
+                                <Skeleton variant="text" width="40%" height={16} />
+                            </div>
                         ) : (
                             <>
                                 <p className="text-2xl font-bold text-primary-600">
@@ -51,9 +55,12 @@ const PosDashboard = () => {
                             </>
                         )}
                     </div>
-                    <div className="card text-center">
+                    <div className="card text-center flex flex-col items-center justify-center h-24">
                         {statsLoading ? (
-                            <div className="animate-pulse h-12 bg-slate-100 rounded"></div>
+                            <div className="w-full flex flex-col items-center gap-2">
+                                <Skeleton variant="text" width="40%" height={24} />
+                                <Skeleton variant="text" width="40%" height={16} />
+                            </div>
                         ) : (
                             <>
                                 <p className="text-2xl font-bold text-slate-800">{stats.billCount}</p>
@@ -76,7 +83,7 @@ const PosDashboard = () => {
                     </div>
 
                     {billsLoading ? (
-                        <Loader text="Loading..." />
+                        <ListSkeleton rows={3} />
                     ) : bills.length === 0 ? (
                         <div className="text-center py-8 text-slate-500">
                             No bills yet today

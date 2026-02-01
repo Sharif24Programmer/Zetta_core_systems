@@ -21,6 +21,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+    console.log('AuthProvider Iniitalizing');
     const [user, setUser] = useState(null);
     const [userData, setUserData] = useState(null);
     const [tenant, setTenant] = useState(null);
@@ -203,10 +204,17 @@ export const AuthProvider = ({ children }) => {
 
             // 3. Create user document in Firestore
             await setDoc(doc(db, 'users', newUser.uid), {
+                name: displayName, // Store name at top level too
                 email: email,
                 displayName: displayName,
                 tenantId: tenantId,
-                role: 'admin', // First user is admin
+                role: 'admin', // First user is Admin of their shop
+
+                // Subscription Fields
+                subscriptionStatus: 'pending', // Default to pending for approval
+                planId: tenantData?.planId || 'basic',
+                billingCycle: tenantData?.billingCycle || 'monthly',
+
                 apps: {
                     core: true,
                     admin: false,

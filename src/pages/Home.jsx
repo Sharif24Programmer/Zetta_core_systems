@@ -1,4 +1,5 @@
 import { useAuth } from '../core/auth/AuthContext';
+import LocationSelector from '../shared/components/LocationSelector';
 
 const Home = () => {
     const { userName, tenant, plan, signOut, isSuperAdmin, hasFeature } = useAuth();
@@ -7,7 +8,12 @@ const Home = () => {
         <div className="page-container">
             <div className="page-header">
                 <div className="flex items-center justify-between">
-                    <h1 className="page-title">Welcome, {userName}</h1>
+                    <div>
+                        <h1 className="page-title">Welcome, {userName}</h1>
+                        <div className="mt-1">
+                            <LocationSelector />
+                        </div>
+                    </div>
                     <button onClick={signOut} className="text-sm text-slate-500 hover:text-slate-700">
                         Sign Out
                     </button>
@@ -20,16 +26,28 @@ const Home = () => {
                     <h2 className="font-semibold text-slate-800 mb-2">Your Shop</h2>
                     <p className="text-slate-600">{tenant?.name || 'Demo Shop'}</p>
                     <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded-full font-medium">
+                        <span className="text-xs px-2 py-1 bg-primary-100 text-primary-700 rounded-full font-medium mb-2 inline-block">
                             {plan?.name || 'Free'} Plan
                         </span>
+                        {plan?.id !== 'enterprise' && (
+                            <a href="/app/subscription/plans" className="ml-auto text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
+                                Upgrade Plan
+                            </a>
+                        )}
                     </div>
+                    {plan?.id === 'basic' && (
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                            <p className="text-xs text-amber-800">
+                                Upgrade to Pro to unlock SMS alerts and Support tickets.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Quick Actions */}
                 <div className="card">
                     <h2 className="font-semibold text-slate-800 mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                         {hasFeature('pos') && (
                             <a href="/app/pos" className="flex flex-col items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
                                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">

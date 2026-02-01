@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db, auth } from '../services/firebase';
 import { useAuth } from '../core/auth/AuthContext';
 import { DEFAULT_PLANS } from '../core/subscription/planService';
 import Loader from '../shared/components/Loader';
@@ -132,7 +132,15 @@ const BusinessSetup = () => {
     // Step 1: Choose Business Type
     if (step === 1) {
         return (
-            <div className="setup-container">
+            <div className="setup-container relative">
+                <div className="absolute top-4 right-4">
+                    <button
+                        onClick={() => auth.signOut()}
+                        className="text-sm text-slate-500 hover:text-red-600 font-medium px-4 py-2"
+                    >
+                        Sign Out
+                    </button>
+                </div>
                 <div className="setup-wrapper max-w-5xl">
                     <SetupHeader title="Welcome to Zetta POS 👋" subtitle="To get started, please tell us what kind of business you run." />
                     <div className="grid md:grid-cols-3 gap-6">

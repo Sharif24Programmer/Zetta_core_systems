@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useMessages } from '../hooks/useMessages';
 import { useTicket } from '../hooks/useTickets';
-import { sendMessage } from '../services/messageService';
+import { addMessage } from '../services/ticketService';
 import { uploadImage } from '../services/uploadService';
 import MessageBubble from '../components/MessageBubble';
 import StatusBadge from '../components/StatusBadge';
@@ -43,12 +43,17 @@ const TicketChat = () => {
                 attachments = [url];
             }
 
-            await sendMessage({
-                ticketId,
+            await addMessage(ticketId, {
                 tenantId,
                 senderId: userId,
                 senderRole: 'user',
                 senderName: userName,
+                text: newMessage.trim(), // Note: ticketService uses 'text' not 'message' based on my implementation, wait, let me check. 
+                // Ah, my ticketService implementation of `addMessage` didn't explicitly check field names, it just passed `...messageData`.
+                // However, `TicketChat` previously used `message` field. I should align them.
+                // Standardizing on 'text' is better for chat, but let's check existing usage.
+                // TicketChat renders `msg.message`. So I should use `message` key or update TicketChat render.
+                // Let's stick to `message` key to minimize UI changes.
                 message: newMessage.trim(),
                 attachments
             });

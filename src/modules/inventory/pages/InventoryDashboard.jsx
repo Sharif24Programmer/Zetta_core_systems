@@ -6,6 +6,7 @@ import { formatCurrency } from '../../pos/services/billService';
 import InventoryProductCard from '../components/InventoryProductCard';
 import StatsCard from '../components/StatsCard';
 import Loader from '../../../shared/components/Loader';
+import Skeleton, { StatsSkeleton } from '../../../shared/components/Skeleton';
 
 const InventoryDashboard = () => {
     const navigate = useNavigate();
@@ -40,7 +41,9 @@ const InventoryDashboard = () => {
 
             <div className="page-content">
                 {/* Stats */}
-                {stats && (
+                {loading ? (
+                    <StatsSkeleton />
+                ) : stats && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <StatsCard
                             label="Total Products"
@@ -126,7 +129,17 @@ const InventoryDashboard = () => {
 
                 {/* Product List */}
                 {loading ? (
-                    <Loader text="Loading products..." />
+                    <div className="space-y-3">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="bg-white p-4 rounded-xl border border-slate-100 flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <Skeleton variant="text" width={120} height={20} />
+                                    <Skeleton variant="text" width={80} height={16} />
+                                </div>
+                                <Skeleton variant="rectangular" width={60} height={32} />
+                            </div>
+                        ))}
+                    </div>
                 ) : filteredProducts.length === 0 ? (
                     <div className="text-center py-12">
                         <p className="text-slate-500 mb-4">

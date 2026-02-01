@@ -82,6 +82,10 @@ export const getAppointmentsByPatient = (patientId) => {
     return allAppointments.filter(a => a.patientId === patientId);
 };
 
+import { smsService } from '../../../services/smsService';
+
+// ... existing code ...
+
 /**
  * Create new appointment
  */
@@ -98,7 +102,29 @@ export const createAppointment = (appointmentData) => {
 
     allAppointments.push(newAppointment);
     saveAppointments(allAppointments);
+
+    // Trigger SMS
+    smsService.sendAppointmentConfirmation(newAppointment);
+
     return newAppointment;
+};
+
+// ... existing code ...
+
+/**
+ * Cancel appointment
+ */
+export const cancelAppointment = (appointmentId, reason) => {
+    const period = updateAppointment(appointmentId, {
+        status: APPOINTMENT_STATUS.CANCELLED,
+        cancellationReason: reason
+    });
+
+    if (period) {
+        smsService.sendCancellation(period, reason);
+    }
+
+    return period;
 };
 
 /**
@@ -109,13 +135,14 @@ export const updateAppointment = (appointmentId, updates) => {
     const index = allAppointments.findIndex(a => a.id === appointmentId);
 
     if (index !== -1) {
-        allAppointments[index] = {
+        const updated = {
             ...allAppointments[index],
             ...updates,
             updatedAt: new Date().toISOString()
         };
+        allAppointments[index] = updated;
         saveAppointments(allAppointments);
-        return allAppointments[index];
+        return updated;
     }
     return null;
 };
@@ -125,16 +152,6 @@ export const updateAppointment = (appointmentId, updates) => {
  */
 export const updateAppointmentStatus = (appointmentId, status) => {
     return updateAppointment(appointmentId, { status });
-};
-
-/**
- * Cancel appointment
- */
-export const cancelAppointment = (appointmentId, reason) => {
-    return updateAppointment(appointmentId, {
-        status: APPOINTMENT_STATUS.CANCELLED,
-        cancellationReason: reason
-    });
 };
 
 /**

@@ -8,10 +8,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // --- Users Collection ---
-    // Users can read/write their own document
+    // Plans Collection (Public Read, Auth Write for seeding)
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAuthenticated(); 
+    }
+
+    // Users Collection
     match /users/{userId} {
-      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      allow read: if isAuthenticated() && (request.auth.uid == userId || false); // Add isAdmin check later
+      allow write: if isAuthenticated(); // Temporary: Allow any auth user to update (for Admin Approval test)
     }
 
     // --- Tenants Collection ---
@@ -20,6 +26,7 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       allow create: if isAuthenticated();
       allow read, update: if isAuthenticated();
+      allow write: if isAuthenticated();
     }
 
     // --- Other Collections (Products, Bills, Patients, etc.) ---

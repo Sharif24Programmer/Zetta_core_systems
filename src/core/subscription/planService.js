@@ -78,89 +78,65 @@ export const getPlanLimits = async (planId) => {
  * Default plans for demo mode
  */
 export const DEFAULT_PLANS = {
-    // 1. Single User (Solopreneur)
-    free: {
-        id: 'free',
-        name: 'Single User',
-        price: 0,
+    // 1. Basic (Small Practice)
+    basic: {
+        id: 'basic',
+        name: 'Basic Plan',
+        price: 599,
         billingCycle: 'monthly',
-        recommendedFor: 'Solo Pharmacists & Small Shops',
+        recommendedFor: 'Solo Practitioners & Small Clinics',
         limits: {
-            staff: 1, // Solopreneur
-            products: 50,
-            bills: 100
+            staff: 2,
+            products: 200,
+            bills: 500
         },
         features: {
             pos: true,
             inventory: true, // Basic
             billing: true,
-            support: true, // Community
+            support: true, // Email
             reports: false,
             analytics: false,
             staff: false,
-            invoices: false,
-            lab_module: false, // No lab for free
-            pharma_db: false
-        }
-    },
-    // 2. Start-up (Small Team)
-    startup: {
-        id: 'startup',
-        name: 'Start-up',
-        price: 999,
-        billingCycle: 'monthly',
-        recommendedFor: 'Growing Clinics & Marts',
-        limits: {
-            staff: 3,
-            products: 500,
-            bills: 1000
-        },
-        features: {
-            pos: true,
-            inventory: true,
-            billing: true,
-            support: true, // Email
-            reports: true, // Basic Reports
-            analytics: false,
-            staff: true,
             invoices: true,
             lab_module: false,
-            pharma_db: true // Access to medicine database
+            pharma_db: false,
+            patients: true
         }
     },
-    // 3. Growth (Professional)
-    growth: {
-        id: 'growth',
-        name: 'Growth',
-        price: 2499,
+    // 2. Pro (Growing Business)
+    pro: {
+        id: 'pro', // Renamed from startup for clarity
+        name: 'Pro Plan',
+        price: 999,
         billingCycle: 'monthly',
-        recommendedFor: 'Busy Medical Centers & Supermarkets',
+        recommendedFor: 'Growing Clinics & busy Pharmacies',
         limits: {
-            staff: 10,
-            products: 5000,
-            bills: 10000
+            staff: 5,
+            products: 2000,
+            bills: 2000
         },
         features: {
             pos: true,
             inventory: true, // Advanced
             billing: true,
             support: true, // Priority
-            reports: true, // Advanced
+            reports: true,
             analytics: true,
-            staff: true, // Payroll
+            staff: true,
             invoices: true,
-            lab_module: true, // Unlocks for Clinics
-            pharma_db: true,
-            patients: true // Medical patient management
+            lab_module: true,
+            pharma_db: true, // Access to medicine database
+            patients: true
         }
     },
-    // 4. Enterprise (Unlimited)
+    // 3. Enterprise (Unlimited)
     enterprise: {
         id: 'enterprise',
-        name: 'Enterprise',
+        name: 'Enterprise Plan',
         price: 9999,
-        billingCycle: 'yearly',
-        recommendedFor: 'Hospital Chains & Retail Franchises',
+        billingCycle: 'monthly', // Changed to monthly for consistency in this view
+        recommendedFor: 'Hospital Chains & Integrators',
         limits: {
             staff: 999,
             products: 999999,
@@ -178,7 +154,7 @@ export const DEFAULT_PLANS = {
             lab_module: true,
             pharma_db: true,
             api_access: true,
-            patients: true // Medical patient management
+            patients: true
         }
     }
 };

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/auth/AuthContext';
+import { useLocation } from '../../../core/context/LocationContext';
 import { getAllAppointments, getTodayAppointments, updateAppointmentStatus, APPOINTMENT_STATUS } from '../services/appointmentService';
+import LocationSelector from '../../../shared/components/LocationSelector';
 
 const AppointmentsPage = () => {
     const { tenant, tenantId } = useAuth();
+    const { selectedLocation } = useLocation();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('today');
     const [appointments, setAppointments] = useState([]);
@@ -12,12 +15,17 @@ const AppointmentsPage = () => {
 
     useEffect(() => {
         loadAppointments();
-    }, [tenantId, activeTab]);
+    }, [tenantId, activeTab, selectedLocation]);
 
     const loadAppointments = () => {
-        const data = activeTab === 'today'
+        let data = activeTab === 'today'
             ? getTodayAppointments(tenantId)
             : getAllAppointments(tenantId);
+
+        // Filter by location if set
+        if (selectedLocation) {
+            data = data.filter(appt => !appt.locationId || appt.locationId === selectedLocation);
+        }
 
         setAppointments(data);
         setFilteredAppointments(data);
@@ -80,7 +88,11 @@ const AppointmentsPage = () => {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="page-title">Appointments</h1>
-                        <p className="text-slate-500">Manage consultations and schedules</p>
+                        <div className="flex items-center gap-2 text-slate-500">
+                            <span>Manage consultations and schedules</span>
+                            <span className="text-slate-300">|</span>
+                            <LocationSelector />
+                        </div>
                     </div>
                     <Link
                         to="/app/appointments/new"
@@ -122,8 +134,8 @@ const AppointmentsPage = () => {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === tab
-                                    ? 'bg-primary-100 text-primary-700'
-                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                ? 'bg-primary-100 text-primary-700'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                 }`}
                         >
                             {tab === 'today' ? "Today's Appointments" : 'All Appointments'}
@@ -206,9 +218,26 @@ const AppointmentsPage = () => {
                                             <button
                                                 onClick={() => navigate(`/app/appointments/${appointment.id}`)}
                                                 className="p-2 hover:bg-slate-100 rounded-lg"
+                                                title="View Details"
                                             >
                                                 <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+
+                                            {/* SMS Reminder Button */}
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    const { smsService } = await import('../../../services/smsService');
+                                                    await smsService.sendReminder(appointment);
+                                                    alert('Reminder sent!');
+                                                }}
+                                                className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg"
+                                                title="Send SMS Reminder"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                                 </svg>
                                             </button>
                                         </div>

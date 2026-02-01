@@ -1,4 +1,14 @@
-import { formatMessageTime } from '../services/messageService';
+// Simple time formatter since messageService is deprecated
+const formatMessageTime = (date) => {
+    if (!date) return '';
+    try {
+        // Handle Firestore Timestamp
+        const d = date.toDate ? date.toDate() : new Date(date);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return '';
+    }
+};
 
 const MessageBubble = ({ message, isOwnMessage }) => {
     const isAdmin = message.senderRole === 'admin';
@@ -16,10 +26,10 @@ const MessageBubble = ({ message, isOwnMessage }) => {
                 {/* Message bubble */}
                 <div
                     className={`px-4 py-2.5 rounded-2xl ${isOwnMessage
-                            ? 'bg-primary-500 text-white rounded-br-md'
-                            : isAdmin
-                                ? 'bg-slate-700 text-white rounded-bl-md'
-                                : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
+                        ? 'bg-primary-500 text-white rounded-br-md'
+                        : isAdmin
+                            ? 'bg-slate-700 text-white rounded-bl-md'
+                            : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
                         }`}
                 >
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.message}</p>

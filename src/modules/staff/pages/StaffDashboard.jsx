@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { getAllStaff, markAttendance, getAttendanceByDate, ATTENDANCE_STATUS } from '../services/staffService';
 import Loader from '../../../shared/components/Loader';
+import SubscriptionGuard from '../../subscription/components/SubscriptionGuard';
 
 // Icons
 const UserAddIcon = () => (
@@ -69,13 +70,15 @@ const StaffDashboard = () => {
                         </button>
                         <h1 className="text-lg font-semibold text-slate-900">Staff Management</h1>
                     </div>
-                    <button
-                        onClick={() => navigate('/app/staff/add')}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        <UserAddIcon />
-                        Add Staff
-                    </button>
+                    <SubscriptionGuard feature="staff" limitKey="staff" currentCount={staff.length} showLockIcon={true}>
+                        <button
+                            onClick={() => navigate('/app/staff/add')}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <UserAddIcon />
+                            Add Staff
+                        </button>
+                    </SubscriptionGuard>
                 </div>
             </div>
 

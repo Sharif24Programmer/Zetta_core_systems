@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useMessages } from '../hooks/useMessages';
 import { useTicket } from '../hooks/useTickets';
-import { sendMessage } from '../services/messageService';
+// import { sendMessage } from '../services/messageService'; // Deprecated
 import { uploadImage } from '../services/uploadService';
-import { updateTicketStatus, updateTicketPriority, closeTicket, TICKET_STATUS, PRIORITY } from '../services/ticketService';
+import { updateTicketStatus, updateTicketPriority, closeTicket, addMessage, TICKET_STATUS, PRIORITY } from '../services/ticketService';
 import MessageBubble from '../components/MessageBubble';
 import StatusBadge from '../components/StatusBadge';
 import PriorityBadge from '../components/PriorityBadge';
@@ -43,9 +43,7 @@ const AdminTicketDetail = () => {
                 attachments = [url];
             }
 
-            await sendMessage({
-                ticketId,
-                tenantId: ticket.tenantId,
+            await addMessage(ticketId, {
                 senderId: userId,
                 senderRole: 'admin',
                 senderName: userName || 'Support Team',
@@ -90,7 +88,7 @@ const AdminTicketDetail = () => {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
                 <p className="text-slate-500 mb-4">Ticket not found</p>
-                <button onClick={() => navigate('/app/admin/support')} className="btn-primary">
+                <button onClick={() => navigate('/admin/tickets')} className="btn-primary">
                     Back to Dashboard
                 </button>
             </div>
@@ -103,7 +101,7 @@ const AdminTicketDetail = () => {
             <div className="bg-white border-b border-slate-200 px-4 py-3">
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => navigate('/app/admin/support')}
+                        onClick={() => navigate('/admin/tickets')}
                         className="p-2 -ml-2 rounded-lg hover:bg-slate-100"
                     >
                         <svg className="w-6 h-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

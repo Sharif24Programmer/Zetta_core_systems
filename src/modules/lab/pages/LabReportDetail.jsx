@@ -199,46 +199,48 @@ const LabReportDetail = () => {
 
                                 {test.parameters && test.parameters[0].value !== null ? (
                                     <div className="p-0">
-                                        <table className="w-full text-sm">
-                                            <thead className="bg-slate-50">
-                                                <tr>
-                                                    <th className="px-6 py-3 text-left font-medium text-slate-500">Parameter</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-slate-500">Result</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-slate-500">Unit</th>
-                                                    <th className="px-6 py-3 text-left font-medium text-slate-500">Reference Range</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-slate-100">
-                                                {test.parameters.map((param, pIndex) => (
-                                                    <tr key={pIndex} className="hover:bg-slate-50">
-                                                        <td className="px-6 py-3 font-medium text-slate-700">{param.name}</td>
-                                                        <td className="px-6 py-3">
-                                                            <span className={`font-semibold ${param.status === 'critical_high' || param.status === 'critical_low' ? 'text-red-600' :
-                                                                param.status === 'high' || param.status === 'low' ? 'text-orange-600' :
-                                                                    'text-slate-900'
-                                                                }`}>
-                                                                {param.value || '--'}
-                                                            </span>
-                                                            {/* Status Indicator */}
-                                                            {param.value && (
-                                                                <>
-                                                                    {(param.status === 'high' || param.status === 'critical_high') && <span className="ml-2 text-xs font-bold text-orange-600">↑ High</span>}
-                                                                    {(param.status === 'low' || param.status === 'critical_low') && <span className="ml-2 text-xs font-bold text-orange-600">↓ Low</span>}
-                                                                </>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-6 py-3 text-slate-500">{param.unit}</td>
-                                                        <td className="px-6 py-3 text-slate-500">
-                                                            {/* We handle range display directly here or via helper */}
-                                                            {param.normalRange ? (
-                                                                // Simplified for display. Better to use helper in a real app with more context but this works for stored data
-                                                                <span>Check context</span>
-                                                            ) : '--'}
-                                                        </td>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-sm min-w-[600px]">
+                                                <thead className="bg-slate-50">
+                                                    <tr>
+                                                        <th className="px-6 py-3 text-left font-medium text-slate-500">Parameter</th>
+                                                        <th className="px-6 py-3 text-left font-medium text-slate-500">Result</th>
+                                                        <th className="px-6 py-3 text-left font-medium text-slate-500">Unit</th>
+                                                        <th className="px-6 py-3 text-left font-medium text-slate-500">Reference Range</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {test.parameters.map((param, pIndex) => (
+                                                        <tr key={pIndex} className="hover:bg-slate-50">
+                                                            <td className="px-6 py-3 font-medium text-slate-700">{param.name}</td>
+                                                            <td className="px-6 py-3">
+                                                                <span className={`font-semibold ${param.status === 'critical_high' || param.status === 'critical_low' ? 'text-red-600' :
+                                                                    param.status === 'high' || param.status === 'low' ? 'text-orange-600' :
+                                                                        'text-slate-900'
+                                                                    }`}>
+                                                                    {param.value || '--'}
+                                                                </span>
+                                                                {/* Status Indicator */}
+                                                                {param.value && (
+                                                                    <>
+                                                                        {(param.status === 'high' || param.status === 'critical_high') && <span className="ml-2 text-xs font-bold text-orange-600">↑ High</span>}
+                                                                        {(param.status === 'low' || param.status === 'critical_low') && <span className="ml-2 text-xs font-bold text-orange-600">↓ Low</span>}
+                                                                    </>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-6 py-3 text-slate-500">{param.unit}</td>
+                                                            <td className="px-6 py-3 text-slate-500">
+                                                                {/* We handle range display directly here or via helper */}
+                                                                {param.normalRange ? (
+                                                                    // Simplified for display. Better to use helper in a real app with more context but this works for stored data
+                                                                    <span>Check context</span>
+                                                                ) : '--'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                         {test.remarks && (
                                             <div className="px-6 py-4 bg-yellow-50 border-t border-slate-100">
                                                 <p className="text-sm font-semibold text-yellow-800">Remarks:</p>

@@ -8,7 +8,7 @@ import Loader from '../../shared/components/Loader';
  * Redirects to login if not authenticated
  */
 const AuthGuard = ({ children }) => {
-    const { user, loading } = useAuth();
+    const { user, userData, loading } = useAuth();
     const location = useLocation();
     const inDemoMode = isDemoMode();
 
@@ -24,6 +24,11 @@ const AuthGuard = ({ children }) => {
     if (!user && !inDemoMode) {
         // Redirect to login, save intended destination
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // Check for Pending Approval (only for real users)
+    if (userData?.subscriptionStatus === 'pending' && !inDemoMode) {
+        return <Navigate to="/pending-approval" replace />;
     }
 
     return children;
