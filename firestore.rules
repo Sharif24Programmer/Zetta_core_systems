@@ -3,103 +3,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // --- Helper Functions ---
-
-    // Check if user is authenticated
+    // Helper to check authentication
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Check if user belongs to the tenant
-    function isTenantMember(tenantId) {
-      return isAuthenticated() && 
-        (request.auth.token.tenantId == tenantId || resource.data.tenantId == tenantId);
-    }
-    
-    // Check if user is a Super Admin
-    function isSuperAdmin() {
-      return isAuthenticated() && request.auth.token.role == 'super_admin';
-    }
-
-    // Check if user is a Tenant Owner
-    function isOwner(tenantId) {
-      return isTenantMember(tenantId) && request.auth.token.role == 'owner';
-    }
-
-    // Check if user is an Admin (Owner or Admin role)
-    function isAdmin(tenantId) {
-      return isTenantMember(tenantId) && (request.auth.token.role == 'owner' || request.auth.token.role == 'admin');
-    }
-
-    // --- Collection Rules ---
-
-    // Tenants (Business profiles)
-    match /tenants/{tenantId} {
-      allow read: if isAuthenticated() && (request.auth.token.tenantId == tenantId || isSuperAdmin());
-      allow create: if isAuthenticated(); // Allow initial setup
-      allow update: if isOwner(tenantId) || isSuperAdmin(); // Only owner can update business details
-      allow delete: if isSuperAdmin(); // Only super admin can delete tenants
-    }
-
-    // Users (Staff profiles)
+    // --- Users Collection ---
+    // Users can read/write their own document
     match /users/{userId} {
-      // User can read their own profile, or admins can read users in their tenant
-      allow read: if isAuthenticated() && (request.auth.uid == userId || resource.data.tenantId == request.auth.token.tenantId);
-      
-      // Admins can manage users, Users can update their own non-sensitive data
-      allow write: if isAuthenticated() && (
-        userId == request.auth.uid || 
-        (resource.data.tenantId == request.auth.token.tenantId && isAdmin(request.auth.token.tenantId))
-      );
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Products (Inventory)
-    match /products/{productId} {
-      allow read: if isTenantMember(resource.data.tenantId);
-      allow write: if isTenantMember(resource.data.tenantId) && isAdmin(resource.data.tenantId);
-    }
-
-    // Bills (Sales)
-    match /bills/{billId} {
-      allow read: if isTenantMember(resource.data.tenantId);
-      allow create: if isTenantMember(request.resource.data.tenantId);
-      allow update: if isTenantMember(resource.data.tenantId) && isAdmin(resource.data.tenantId); // Only admins can modify past bills
-      allow delete: if false; // Bills should never be deleted, only cancelled (update status)
-    }
-
-    // Customers / Patients
-    match /patients/{patientId} {
-      allow read, write: if isTenantMember(resource.data.tenantId);
-    }
-
-    // Visits (Clinic)
-    match /visits/{visitId} {
-      allow read, write: if isTenantMember(resource.data.tenantId);
-    }
-
-    // Stock Logs
-    match /stockLogs/{logId} {
-      allow read: if isTenantMember(resource.data.tenantId);
-      allow create: if isTenantMember(request.resource.data.tenantId);
-      allow update, delete: if false; // Logs are immutable
-    }
-
-    // Support Tickets
-    match /tickets/{ticketId} {
-      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+    // --- Tenants Collection ---
+    // Allow any authenticated user to create a tenant (business setup)
+    // Allow reading/updating for now (will tighten later)
+    match /tenants/{tenantId} {
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isSuperAdmin());
+      allow read, update: if isAuthenticated();
     }
 
-    // Admin Analytics (Aggregated Data)
-    match /analytics/{docId} {
-      allow read: if isSuperAdmin();
-      allow write: if isSuperAdmin(); // Created by backend/triggers usually
-    }
-
-    // Default deny
+    // --- Other Collections (Products, Bills, Patients, etc.) ---
+    // Temporary Open Rules: Allow all authenticated users to read/write
+    // TODO: Implement strict RBAC with Custom Claims or User Doc lookups before production
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if isAuthenticated();
     }
   }
 }

@@ -82,8 +82,9 @@ import AppointmentsPage from '../modules/appointments/pages/AppointmentsPage';
 import BookAppointment from '../modules/appointments/pages/BookAppointment';
 
 const AppRoutes = () => {
-    const { loading, user } = useAuth();
+    const { loading, user, tenant } = useAuth();
     const isAuthenticated = !!user || isDemoMode();
+    const isSetupComplete = !!tenant || isDemoMode(); // Demo mode implies setup complete
 
     if (loading) {
         return (
@@ -99,11 +100,11 @@ const AppRoutes = () => {
                 {/* Public Routes */}
                 <Route
                     path="/login"
-                    element={isAuthenticated ? <Navigate to="/app" replace /> : <Login />}
+                    element={isAuthenticated ? <Navigate to={isSetupComplete ? "/app" : "/setup"} replace /> : <Login />}
                 />
                 <Route
                     path="/signup"
-                    element={isAuthenticated ? <Navigate to="/app" replace /> : <Signup />}
+                    element={isAuthenticated ? <Navigate to={isSetupComplete ? "/app" : "/setup"} replace /> : <Signup />}
                 />
 
                 {/* Business Setup (Authenticated but no tenant) */}

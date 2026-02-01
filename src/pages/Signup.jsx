@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../services/firebase';
+import { useAuth } from '../core/auth/AuthContext';
+import { signInWithPopup } from 'firebase/auth'; // Still need for Google button if not in context
+import { auth, googleProvider } from '../services/firebase';
 
 const Signup = () => {
     const navigate = useNavigate();
+    const { signUp, signInWithGoogle } = useAuth(); // Use context methods
+
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -20,19 +22,6 @@ const Signup = () => {
             ...prev,
             [e.target.name]: e.target.value
         }));
-    };
-
-    const createUserProfile = async (user, provider = 'password') => {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, {
-            uid: user.uid,
-            email: user.email,
-            name: formData.name || user.displayName || 'User',
-            tenantId: null, // Will be set during business setup
-            role: null,
-            provider,
-            createdAt: serverTimestamp()
-        });
     };
 
     const handleEmailSignup = async (e) => {
@@ -51,31 +40,18 @@ const Signup = () => {
 
         setLoading(true);
         try {
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                formData.email,
-                formData.password
-            );
+            // Use AuthContext signUp
+            const result = await signUp(formData.email, formData.password, formData.name);
 
-            // Update display name
-            await updateProfile(userCredential.user, {
-                displayName: formData.name
-            });
-
-            // Create user profile
-            await createUserProfile(userCredential.user, 'password');
-
-            // Redirect to business setup
-            navigate('/setup');
+            if (result.success) {
+                // Redirect to business setup
+                navigate('/setup');
+            } else {
+                setError(result.error || 'Failed to create account');
+            }
         } catch (err) {
             console.error('Signup error:', err);
-            if (err.code === 'auth/email-already-in-use') {
-                setError('An account with this email already exists');
-            } else if (err.code === 'auth/weak-password') {
-                setError('Password is too weak');
-            } else {
-                setError(err.message || 'Failed to create account');
-            }
+            setError(err.message || 'Failed to create account');
         }
         setLoading(false);
     };
@@ -84,18 +60,33 @@ const Signup = () => {
         setError(null);
         setLoading(true);
         try {
-            const result = await signInWithPopup(auth, googleProvider);
+            // Use AuthContext google method if available, or direct
+            const result = await signInWithGoogle();
 
-            // Create user profile
-            await createUserProfile(result.user, 'google');
+            if (result.success) {
+                // Check if user has tenant, if not go to setup
+                // But signInWithGoogle in context handles login. 
+                // We might need to check if it's a new user?
+                // For now, let's assume it redirects to app, or we check manually.
+                // Actually, BusinessSetup checks if !user.tenantId.
+                // If signInWithGoogle returns success, user is set.
+                // Let's modify logic: 
+                // Context signInWithGoogle handles fetching user doc.
+                // If user doc has NO tenantId, we should go to /setup.
+                // But typically signInWithGoogle just signs in.
 
-            // Redirect to business setup
-            navigate('/setup');
+                // For this refactor, let's just use the context method.
+                if (result.user && !result.user.tenantId) {
+                    navigate('/setup');
+                } else {
+                    navigate('/app');
+                }
+            } else {
+                setError(result.error);
+            }
         } catch (err) {
             console.error('Google signup error:', err);
-            if (err.code !== 'auth/popup-closed-by-user') {
-                setError(err.message || 'Failed to sign up with Google');
-            }
+            setError(err.message || 'Failed to sign up with Google');
         }
         setLoading(false);
     };

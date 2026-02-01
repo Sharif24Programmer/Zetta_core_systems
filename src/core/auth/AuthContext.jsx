@@ -35,17 +35,23 @@ export const AuthProvider = ({ children }) => {
             const userDoc = await getDoc(userDocRef);
 
             if (!userDoc.exists()) {
-                throw new Error('Account not found. Please contact support or complete signup.');
+                // Profile might not exist yet during signup (race condition)
+                // proper flow will create it shortly.
+                setUserData(null);
+                setTenant(null);
+                return;
             }
 
             const userInfo = userDoc.data();
+            setUserData(userInfo);
 
             // 2. Check if user has a tenantId
             if (!userInfo.tenantId) {
-                throw new Error('Your account is not associated with any shop. Please contact support.');
+                // New user flow - allow access to setup pages, but no tenant data yet
+                setTenant(null);
+                setError(null);
+                return;
             }
-
-            setUserData(userInfo);
 
             // 3. Get tenant data
             const tenantDocRef = doc(db, 'tenants', userInfo.tenantId);
