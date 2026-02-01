@@ -115,11 +115,8 @@ const BusinessSetup = () => {
             if (selectedPlan.price === 0) {
                 navigate('/app');
             } else {
-                // In real app, show a "Pending Approval" screen. 
-                // For now, we'll let them in but functionality might be limited or we just navigate to app
-                // and assume admin approves instantly in this demo.
-                alert('Account created! An admin will verify your payment shortly.');
-                navigate('/app');
+                // Paid plan: Redirect to Pending Approval
+                navigate('/pending-approval');
             }
         } catch (err) {
             console.error('Business setup error:', err);

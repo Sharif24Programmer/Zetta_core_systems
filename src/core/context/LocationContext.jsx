@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
+import { isDemoMode } from '../demo/demoManager';
 
 const LocationContext = createContext();
 
@@ -17,15 +18,25 @@ export const LocationProvider = ({ children }) => {
 
     useEffect(() => {
         const fetchLocations = async () => {
-            if (!tenantId || !user) {
+            if (!tenantId && !isDemoMode()) {
+                setLoading(false);
+                return;
+            }
+
+            // Demo Mode Bypass
+            if (isDemoMode(tenantId)) {
+                const mockLocs = [
+                    { id: 'main', name: 'Main Branch (Demo)' },
+                    { id: 'downtown', name: 'Downtown Clinic (Demo)' }
+                ];
+                setAvailableLocations(mockLocs);
+                setSelectedLocation(mockLocs[0].id);
                 setLoading(false);
                 return;
             }
 
             try {
                 // Fetch tenant data to get all defined locations
-                // Note: In a real app we might cache this or store it in user claims
-                // For now, we assume tenant doc has a 'locations' array
                 const tenantRef = doc(db, 'tenants', tenantId);
                 const tenantSnap = await getDoc(tenantRef);
 
@@ -33,12 +44,10 @@ export const LocationProvider = ({ children }) => {
                 if (tenantSnap.exists() && tenantSnap.data().locations) {
                     allLocations = tenantSnap.data().locations;
                 } else {
-                    // Default location if none defined
                     allLocations = [{ id: 'main', name: 'Main Clinic' }];
                 }
 
                 // Filter based on user access
-                // If user has allowedLocations, use that. If not (or if admin), allow all.
                 let allowed = allLocations;
                 if (userData?.allowedLocations && userData.allowedLocations.length > 0 && userData.role !== 'admin') {
                     allowed = allLocations.filter(loc => userData.allowedLocations.includes(loc.id));

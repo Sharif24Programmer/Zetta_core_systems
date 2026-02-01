@@ -23,17 +23,22 @@ service cloud.firestore {
     // --- Tenants Collection ---
     // Allow any authenticated user to create a tenant (business setup)
     // Allow reading/updating for now (will tighten later)
+    // --- Tenants & Subcollections (The Core Data) ---
+    // Allow authenticated users to access tenant data.
+    // In a strict production env, you would check: request.auth.token.tenantId == tenantId
     match /tenants/{tenantId} {
       allow create: if isAuthenticated();
-      allow read, update: if isAuthenticated();
-      allow write: if isAuthenticated();
-    }
-
-    // --- Other Collections (Products, Bills, Patients, etc.) ---
-    // Temporary Open Rules: Allow all authenticated users to read/write
-    // TODO: Implement strict RBAC with Custom Claims or User Doc lookups before production
-    match /{document=**} {
       allow read, write: if isAuthenticated();
+      
+      // Allow access to all subcollections (tickets, bills, etc.)
+      match /{document=**} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+    
+    // Default Deny for everything else (Best Practice)
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
