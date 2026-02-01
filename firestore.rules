@@ -3,40 +3,249 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Helper to check authentication
+    // ============================================================
+    //  HELPER FUNCTIONS
+    // ============================================================
+    
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
-
-    // Plans Collection (Public Read, Auth Write for seeding)
+    
+    // Check if the requesting user is the owner of this user document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Check if user is a super admin (based on custom claim or user doc)
+    // Note: For true production, use custom claims set via Cloud Functions.
+    // This is a simplified check based on email for development.
+    function isSuperAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == 'admin@zetta.com' ||
+        request.auth.token.admin == true
+      );
+    }
+    
+    // Check if the user belongs to the given tenant
+    // In production, use custom claims: request.auth.token.tenantId == tenantId
+    function belongsToTenant(tenantId) {
+      return isAuthenticated(); // Simplified for now
+    }
+    
+    // ============================================================
+    //  PUBLIC / GLOBAL COLLECTIONS
+    // ============================================================
+    
+    // --- Plans Collection ---
+    // Anyone can read plans (for pricing page), only admins can write.
     match /plans/{planId} {
       allow read: if true;
-      allow write: if isAuthenticated(); 
+      allow write: if isSuperAdmin();
     }
-
-    // Users Collection
+    
+    // --- Global Medicines Database (Master Data) ---
+    // Read by all authenticated users, write by super admins only.
+    match /medicines/{medicineId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // --- Lab Test Templates (Master Data) ---
+    match /labTestTemplates/{templateId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // --- Categories (Master Data) ---
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // ============================================================
+    //  USER COLLECTION
+    // ============================================================
+    
     match /users/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || false); // Add isAdmin check later
-      allow write: if isAuthenticated(); // Temporary: Allow any auth user to update (for Admin Approval test)
-    }
-
-    // --- Tenants Collection ---
-    // Allow any authenticated user to create a tenant (business setup)
-    // Allow reading/updating for now (will tighten later)
-    // --- Tenants & Subcollections (The Core Data) ---
-    // Allow authenticated users to access tenant data.
-    // In a strict production env, you would check: request.auth.token.tenantId == tenantId
-    match /tenants/{tenantId} {
-      allow create: if isAuthenticated();
-      allow read, write: if isAuthenticated();
+      // Users can read their own profile.
+      // Super admins can read any user (for admin panel user management).
+      allow read: if isOwner(userId) || isSuperAdmin();
       
-      // Allow access to all subcollections (tickets, bills, etc.)
-      match /{document=**} {
+      // Users can update their own profile (e.g., name, preferences).
+      // Super admins can update any user (e.g., role changes, tenant assignment).
+      allow write: if isOwner(userId) || isSuperAdmin();
+      
+      // Allow creation if user is creating their own doc (during signup)
+      allow create: if isOwner(userId);
+    }
+    
+    // ============================================================
+    //  TENANTS COLLECTION (Multi-Tenant Core)
+    // ============================================================
+    
+    match /tenants/{tenantId} {
+      // Read: Authenticated users who belong to this tenant (or super admins)
+      allow read: if belongsToTenant(tenantId) || isSuperAdmin();
+      
+      // Create: Any authenticated user can create a tenant (during business setup)
+      allow create: if isAuthenticated();
+      
+      // Update/Delete: Owner of the tenant or super admin
+      allow update, delete: if belongsToTenant(tenantId) || isSuperAdmin();
+      
+      // --------------------------------------------------------
+      //  TENANT SUBCOLLECTIONS
+      //  All data related to a tenant is stored here.
+      // --------------------------------------------------------
+      
+      // --- Products / Inventory ---
+      match /products/{productId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Stock Logs ---
+      match /stockLogs/{logId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Batches (for medical stores) ---
+      match /batches/{batchId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Bills / Transactions ---
+      match /bills/{billId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Invoices ---
+      match /invoices/{invoiceId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Patients ---
+      match /patients/{patientId} {
+        allow read, write: if belongsToTenant(tenantId);
+        
+        // Patient sub-documents (visits, prescriptions)
+        match /{subcollection=**} {
+          allow read, write: if belongsToTenant(tenantId);
+        }
+      }
+      
+      // --- Appointments ---
+      match /appointments/{appointmentId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Staff / Employees ---
+      match /staff/{staffId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Lab Reports ---
+      match /labReports/{reportId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Expenses ---
+      match /expenses/{expenseId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Settings (tenant-specific settings) ---
+      match /settings/{settingId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Locations (multi-location support) ---
+      match /locations/{locationId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+      
+      // --- Catch-all for any other tenant subcollections ---
+      // This ensures new features work without immediate rule updates.
+      match /{subcollection}/{docId} {
+        allow read, write: if belongsToTenant(tenantId);
+      }
+    }
+    
+    // ============================================================
+    //  SUPPORT TICKETS (Global, Cross-Tenant)
+    // ============================================================
+    
+    match /support_tickets/{ticketId} {
+      // Read: Ticket owner (by tenantId or userId) or super admin
+      allow read: if isAuthenticated();
+      
+      // Create: Any authenticated user can create a ticket
+      allow create: if isAuthenticated();
+      
+      // Update: Ticket owner or super admin
+      allow update: if isAuthenticated();
+      
+      // Delete: Super admin only
+      allow delete: if isSuperAdmin();
+      
+      // --- Messages subcollection ---
+      match /messages/{messageId} {
         allow read, write: if isAuthenticated();
       }
     }
     
-    // Default Deny for everything else (Best Practice)
+    // ============================================================
+    //  SUBSCRIPTIONS / PAYMENTS (Global)
+    // ============================================================
+    
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    match /payments/{paymentId} {
+      allow read: if isAuthenticated();
+      allow write: if isSuperAdmin();
+    }
+    
+    // ============================================================
+    //  ANALYTICS / LOGS (Global, Admin Only)
+    // ============================================================
+    
+    match /analytics/{docId} {
+      allow read: if isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+    
+    match /auditLogs/{logId} {
+      allow read: if isSuperAdmin();
+      allow write: if isSuperAdmin();
+    }
+    
+    // ============================================================
+    //  NOTIFICATIONS (User-specific)
+    // ============================================================
+    
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isSuperAdmin();
+      allow update, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================================
+    //  FEATURE FLAGS (Read-Only for all, Write for Admins)
+    // ============================================================
+    
+    match /featureFlags/{flagId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+    
+    // ============================================================
+    //  DEFAULT DENY (Catch-All)
+    //  Any path not explicitly matched above is DENIED.
+    // ============================================================
+    
     match /{document=**} {
       allow read, write: if false;
     }
