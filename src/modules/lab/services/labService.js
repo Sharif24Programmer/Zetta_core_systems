@@ -1,6 +1,7 @@
 /**
- * Lab Service (Firestore Version)
+ * Lab Service
  * Manage Lab Tests, Results, and Patient Reports
+ * Supports both Firebase (production) and Demo Mode (localStorage)
  */
 
 import {
@@ -16,6 +17,12 @@ import {
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../../core/firebase/config';
+import {
+    isDemoMode,
+    getDemoData,
+    saveDemoData,
+    generateDemoId
+} from '../../../core/demo/demoManager';
 
 const LAB_REPORTS_COLLECTION = 'lab_reports';
 
@@ -78,6 +85,22 @@ export const getLabTests = async (tenantId) => {
  */
 export const createLabReport = async (reportData) => {
     try {
+        // DEMO MODE: Use local storage
+        if (isDemoMode()) {
+            const reports = getDemoData('lab_reports');
+            const newReport = {
+                id: generateDemoId('lab'),
+                ...reportData,
+                status: reportData.status || LAB_STATUS.REGISTERED,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            reports.push(newReport);
+            saveDemoData('lab_reports', reports);
+            return newReport;
+        }
+
+        // PRODUCTION MODE: Use Firebase
         const newReport = {
             ...reportData,
             status: reportData.status || LAB_STATUS.REGISTERED,
@@ -103,6 +126,15 @@ export const createLabReport = async (reportData) => {
  */
 export const getPatientReports = async (patientId) => {
     try {
+        // DEMO MODE: Use local storage
+        if (isDemoMode()) {
+            const reports = getDemoData('lab_reports');
+            return reports
+                .filter(r => r.patientId === patientId)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        // PRODUCTION MODE: Use Firebase
         const q = query(
             collection(db, LAB_REPORTS_COLLECTION),
             where('patientId', '==', patientId),
@@ -126,6 +158,15 @@ export const getPatientReports = async (patientId) => {
  */
 export const getAllLabReports = async (tenantId) => {
     try {
+        // DEMO MODE: Use local storage
+        if (isDemoMode()) {
+            const reports = getDemoData('lab_reports');
+            return reports
+                .filter(r => r.tenantId === tenantId)
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        // PRODUCTION MODE: Use Firebase
         const q = query(
             collection(db, LAB_REPORTS_COLLECTION),
             where('tenantId', '==', tenantId),
@@ -149,6 +190,13 @@ export const getAllLabReports = async (tenantId) => {
  */
 export const getLabReportById = async (id) => {
     try {
+        // DEMO MODE: Use local storage
+        if (isDemoMode()) {
+            const reports = getDemoData('lab_reports');
+            return reports.find(r => r.id === id) || null;
+        }
+
+        // PRODUCTION MODE: Use Firebase
         const docRef = doc(db, LAB_REPORTS_COLLECTION, id);
         const docSnap = await getDoc(docRef);
 
@@ -171,6 +219,23 @@ export const getLabReportById = async (id) => {
  */
 export const updateLabReport = async (id, updates) => {
     try {
+        // DEMO MODE: Use local storage
+        if (isDemoMode()) {
+            const reports = getDemoData('lab_reports');
+            const index = reports.findIndex(r => r.id === id);
+            if (index !== -1) {
+                reports[index] = {
+                    ...reports[index],
+                    ...updates,
+                    updatedAt: new Date().toISOString()
+                };
+                saveDemoData('lab_reports', reports);
+                return reports[index];
+            }
+            return null;
+        }
+
+        // PRODUCTION MODE: Use Firebase
         const docRef = doc(db, LAB_REPORTS_COLLECTION, id);
 
         await updateDoc(docRef, {

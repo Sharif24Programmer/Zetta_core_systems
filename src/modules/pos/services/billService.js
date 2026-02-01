@@ -12,6 +12,7 @@ import {
     serverTimestamp,
     limit
 } from 'firebase/firestore';
+import { isDemoMode } from '../../../core/demo/demoManager';
 
 /**
  * Bill Schema:
@@ -67,7 +68,7 @@ const notifyDemoListeners = () => {
  * Generate bill number
  */
 const generateBillNumber = async (tenantId) => {
-    if (tenantId === 'demo_shop') {
+    if (isDemoMode()) {
         const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const count = MOCK_BILLS.length + 1;
         return `INV${dateStr}${count.toString().padStart(4, '0')}`;
@@ -104,7 +105,7 @@ export const createBill = async (billData) => {
         createdAt: serverTimestamp() // In real DB this is server timestamp
     };
 
-    if (billData.tenantId === 'demo_shop') {
+    if (isDemoMode()) {
         const newBill = {
             id: `demo_new_${Date.now()}`,
             ...data,
@@ -123,7 +124,7 @@ export const createBill = async (billData) => {
  * Get bills for a tenant
  */
 export const getBills = async (tenantId, limitCount = 50) => {
-    if (tenantId === 'demo_shop') return [...MOCK_BILLS];
+    if (isDemoMode()) return [...MOCK_BILLS];
 
     const q = query(
         collection(db, "bills"),
@@ -139,7 +140,7 @@ export const getBills = async (tenantId, limitCount = 50) => {
  * Get today's bills
  */
 export const getTodaysBills = async (tenantId) => {
-    if (tenantId === 'demo_shop') {
+    if (isDemoMode()) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return MOCK_BILLS.filter(b => b.createdAt >= today);
@@ -162,7 +163,7 @@ export const getTodaysBills = async (tenantId) => {
  * Listen to today's bills in real-time
  */
 export const listenToTodaysBills = (tenantId, callback) => {
-    if (tenantId === 'demo_shop') {
+    if (isDemoMode()) {
         // Return mock data immediately
         callback([...MOCK_BILLS]);
         demoBillListeners.push(callback);
