@@ -72,12 +72,12 @@ const PatientsPage = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
                     <div className="card text-center">
-                        <p className="text-3xl font-bold text-primary-600">{patients.length}</p>
+                        <p className="text-3xl font-bold text-primary-600">{(patients || []).length}</p>
                         <p className="text-sm text-slate-500">Total Patients</p>
                     </div>
                     <div className="card text-center">
                         <p className="text-3xl font-bold text-green-600">
-                            {patients.filter(p => {
+                            {(patients || []).filter(p => {
                                 const lastVisit = new Date(p.lastVisit);
                                 const today = new Date();
                                 return lastVisit.toDateString() === today.toDateString();
@@ -87,7 +87,7 @@ const PatientsPage = () => {
                     </div>
                     <div className="card text-center">
                         <p className="text-3xl font-bold text-blue-600">
-                            {patients.filter(p => p.chronicConditions?.length > 0).length}
+                            {(patients || []).filter(p => p.chronicConditions?.length > 0).length}
                         </p>
                         <p className="text-sm text-slate-500">Chronic Cases</p>
                     </div>

@@ -68,15 +68,15 @@ const LandingPage = () => {
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
                     <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wide mb-6 sm:mb-8 animate-fadeIn">
                         <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                        New: Multi-Location Support & SMS Features
+                        New: Multi-Tenant Platform & Multi-Location Support
                     </div>
                     <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 sm:mb-8 leading-tight px-4 sm:px-0">
-                        The Operating System for <br className="hidden sm:block" />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Modern Healthcare Retail</span>
+                        One Platform for <br className="hidden sm:block" />
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Every Business Type</span>
                     </h1>
                     <p className="mt-4 max-w-2xl mx-auto text-base sm:text-lg lg:text-xl text-slate-600 mb-8 sm:mb-10 leading-relaxed px-4 sm:px-0">
-                        Manage inventory, billing, patients, and analytics in one beautiful platform.
-                        Designed for pharmacies, clinics, and hospital chains.
+                        Create your account and run your clinic, pharmacy, retail shop, or any business with our powerful multi-tenant POS platform.
+                        One system, unlimited possibilities.
                     </p>
                     <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 animate-slideUp px-4 sm:px-0">
                         <Link

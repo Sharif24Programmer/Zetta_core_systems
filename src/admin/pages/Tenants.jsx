@@ -46,92 +46,94 @@ const Tenants = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <table className="w-full">
-                    <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Tenant</th>
-                            <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Type</th>
-                            <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Plan</th>
-                            <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Status</th>
-                            <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Revenue</th>
-                            <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Details</th>
-                            <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {tenants.map(tenant => (
-                            <tr key={tenant.id} className="hover:bg-slate-50 transition-colors group">
-                                <td className="px-6 py-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                                            {tenant.name.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-slate-900">{tenant.name}</p>
-                                            <p className="text-xs text-slate-500">{tenant.admin}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-slate-600">{tenant.type}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${tenant.plan === 'Enterprise' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                                        tenant.plan === 'Growth' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                            'bg-slate-50 text-slate-700 border-slate-200'
-                                        }`}>
-                                        {tenant.plan}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-1 rounded text-xs font-semibold flex w-fit items-center gap-1 ${tenant.status === 'Active'
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : tenant.status === 'Suspended'
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-amber-100 text-amber-800'
-                                        }`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${tenant.status === 'Active' ? 'bg-emerald-600' :
-                                            tenant.status === 'Suspended' ? 'bg-red-600' : 'bg-amber-600'
-                                            }`}></span>
-                                        {tenant.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 font-mono text-sm text-slate-700">{tenant.revenue}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium hover:underline">
-                                        View Details
-                                    </button>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                            onClick={() => handleImpersonate(tenant)}
-                                            title="Impersonate Tenant"
-                                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
-                                        >
-                                            {Icons.impersonate}
-                                        </button>
-                                        {tenant.status === 'Suspended' ? (
-                                            <button
-                                                onClick={() => toggleStatus(tenant.id, tenant.status)}
-                                                title="Activate Tenant"
-                                                className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-100"
-                                            >
-                                                {Icons.unlock}
-                                            </button>
-                                        ) : (
-                                            <button
-                                                onClick={() => toggleStatus(tenant.id, tenant.status)}
-                                                title="Suspend Tenant"
-                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                                            >
-                                                {Icons.ban}
-                                            </button>
-                                        )}
-                                    </div>
-                                </td>
+                <div className="overflow-x-auto">
+                    <table className="w-full min-w-[800px]">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200">
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Tenant</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Type</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Plan</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Status</th>
+                                <th className="text-left px-6 py-4 text-sm font-semibold text-slate-600">Revenue</th>
+                                <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Details</th>
+                                <th className="text-right px-6 py-4 text-sm font-semibold text-slate-600">Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {tenants.map(tenant => (
+                                <tr key={tenant.id} className="hover:bg-slate-50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-gradient-to-br from-slate-700 to-slate-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm shadow-sm">
+                                                {tenant.name.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium text-slate-900">{tenant.name}</p>
+                                                <p className="text-xs text-slate-500">{tenant.admin}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-slate-600">{tenant.type}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-medium border ${tenant.plan === 'Enterprise' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                                            tenant.plan === 'Growth' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                                'bg-slate-50 text-slate-700 border-slate-200'
+                                            }`}>
+                                            {tenant.plan}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-semibold flex w-fit items-center gap-1 ${tenant.status === 'Active'
+                                            ? 'bg-emerald-100 text-emerald-800'
+                                            : tenant.status === 'Suspended'
+                                                ? 'bg-red-100 text-red-800'
+                                                : 'bg-amber-100 text-amber-800'
+                                            }`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${tenant.status === 'Active' ? 'bg-emerald-600' :
+                                                tenant.status === 'Suspended' ? 'bg-red-600' : 'bg-amber-600'
+                                                }`}></span>
+                                            {tenant.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 font-mono text-sm text-slate-700">{tenant.revenue}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="text-indigo-600 hover:text-indigo-800 text-sm font-medium hover:underline">
+                                            View Details
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => handleImpersonate(tenant)}
+                                                title="Impersonate Tenant"
+                                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors border border-transparent hover:border-indigo-100"
+                                            >
+                                                {Icons.impersonate}
+                                            </button>
+                                            {tenant.status === 'Suspended' ? (
+                                                <button
+                                                    onClick={() => toggleStatus(tenant.id, tenant.status)}
+                                                    title="Activate Tenant"
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-100"
+                                                >
+                                                    {Icons.unlock}
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => toggleStatus(tenant.id, tenant.status)}
+                                                    title="Suspend Tenant"
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                                                >
+                                                    {Icons.ban}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
