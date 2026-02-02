@@ -47,37 +47,37 @@ const Home = () => {
                 {/* Quick Actions */}
                 <div className="card">
                     <h2 className="font-semibold text-slate-800 mb-4">Quick Actions</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                         {hasFeature('pos') && (
-                            <a href="/app/pos" className="flex flex-col items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                                    <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <a href="/app/pos" className="flex flex-col items-center p-4 sm:p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors min-h-[100px] sm:min-h-[90px]">
+                                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg className="w-7 h-7 sm:w-6 sm:h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                <span className="text-sm font-medium text-slate-700">POS</span>
+                                <span className="text-sm font-medium text-slate-700 text-center">POS</span>
                             </a>
                         )}
 
                         {hasFeature('support') && (
-                            <a href="/app/support" className="flex flex-col items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                                    <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <a href="/app/support" className="flex flex-col items-center p-4 sm:p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors min-h-[100px] sm:min-h-[90px]">
+                                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg className="w-7 h-7 sm:w-6 sm:h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
                                 </div>
-                                <span className="text-sm font-medium text-slate-700">Support</span>
+                                <span className="text-sm font-medium text-slate-700 text-center">Support</span>
                             </a>
                         )}
 
                         {hasFeature('inventory') && (
-                            <a href="/app/inventory" className="flex flex-col items-center p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
-                                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                                    <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <a href="/app/inventory" className="flex flex-col items-center p-4 sm:p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors min-h-[100px] sm:min-h-[90px]">
+                                <div className="w-14 h-14 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
+                                    <svg className="w-7 h-7 sm:w-6 sm:h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                     </svg>
                                 </div>
-                                <span className="text-sm font-medium text-slate-700">Inventory</span>
+                                <span className="text-sm font-medium text-slate-700 text-center">Inventory</span>
                             </a>
                         )}
 

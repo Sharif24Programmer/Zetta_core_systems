@@ -629,7 +629,11 @@ const AppRoutes = () => {
 
                 <Route
                     path="/"
-                    element={isAuthenticated ? <Navigate to="/app" replace /> : <LandingPage />}
+                    element={
+                        loading ? <Loader /> :
+                            isAuthenticated ? <Navigate to="/app" replace /> :
+                                <LandingPage />
+                    }
                 />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

@@ -10,12 +10,12 @@ const LandingPage = () => {
             {/* Navbar */}
             <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 transition-all duration-300">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-20">
+                    <div className="flex justify-between items-center h-16 sm:h-20">
                         <div className="flex items-center gap-2">
-                            <div className="w-10 h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-500/30">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-indigo-500/30">
                                 Z
                             </div>
-                            <span className="font-bold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+                            <span className="font-bold text-xl sm:text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
                                 Zetta POS
                             </span>
                         </div>
@@ -44,12 +44,21 @@ const LandingPage = () => {
                                 </div>
                             )}
                         </div>
+                        {/* Mobile CTA */}
+                        <div className="md:hidden">
+                            <Link
+                                to="/login"
+                                className="px-4 py-2 rounded-full bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-all"
+                            >
+                                Start Free
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+            <div className="relative pt-24 pb-16 sm:pt-32 sm:pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-40 pointer-events-none">
                     <div className="absolute top-20 left-20 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
                     <div className="absolute top-20 right-20 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
@@ -57,28 +66,28 @@ const LandingPage = () => {
                 </div>
 
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wide mb-8 animate-fadeIn">
+                    <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wide mb-6 sm:mb-8 animate-fadeIn">
                         <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                         New: Multi-Location Support & SMS Features
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 leading-tight">
-                        The Operating System for <br />
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold text-slate-900 tracking-tight mb-6 sm:mb-8 leading-tight px-4 sm:px-0">
+                        The Operating System for <br className="hidden sm:block" />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Modern Healthcare Retail</span>
                     </h1>
-                    <p className="mt-4 max-w-2xl mx-auto text-xl text-slate-600 mb-10 leading-relaxed">
+                    <p className="mt-4 max-w-2xl mx-auto text-base sm:text-lg lg:text-xl text-slate-600 mb-8 sm:mb-10 leading-relaxed px-4 sm:px-0">
                         Manage inventory, billing, patients, and analytics in one beautiful platform.
                         Designed for pharmacies, clinics, and hospital chains.
                     </p>
-                    <div className="flex flex-col sm:flex-row justify-center gap-4 animate-slideUp">
+                    <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 animate-slideUp px-4 sm:px-0">
                         <Link
                             to="/login"
-                            className="px-8 py-4 rounded-xl bg-indigo-600 text-white font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/30 hover:-translate-y-1"
+                            className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl bg-indigo-600 text-white font-bold text-base sm:text-lg hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/30 hover:-translate-y-1 min-h-[48px] flex items-center justify-center"
                         >
                             Get Started Free
                         </Link>
                         <a
                             href="#demo"
-                            className="px-8 py-4 rounded-xl bg-white text-slate-700 border border-slate-200 font-bold text-lg hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                            className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl bg-white text-slate-700 border border-slate-200 font-bold text-base sm:text-lg hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 min-h-[48px]"
                         >
                             <svg className="w-5 h-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
