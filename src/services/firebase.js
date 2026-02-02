@@ -2,7 +2,6 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAnalytics } from "firebase/analytics";
 
 // Firebase configuration - Zetta POS Core
 const firebaseConfig = {
@@ -22,7 +21,16 @@ const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const analytics = getAnalytics(app);
+
+// Lazy load analytics to avoid blocking initial render
+let analyticsInstance = null;
+export const getAnalyticsInstance = async () => {
+    if (!analyticsInstance && typeof window !== 'undefined') {
+        const { getAnalytics } = await import('firebase/analytics');
+        analyticsInstance = getAnalytics(app);
+    }
+    return analyticsInstance;
+};
 
 // Google Auth Provider
 export const googleProvider = new GoogleAuthProvider();
